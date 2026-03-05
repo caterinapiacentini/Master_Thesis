@@ -24,27 +24,27 @@ def iter_rtrs_items_from_gz(gz_path: Path) -> Iterator[Dict]:
     NOTE: If a gzip is truncated/corrupt, gzip can raise EOFError; caller handles.
     """
     with gzip.open(gz_path, "rt", encoding="utf-8", errors="replace") as f:
-        # Skip until Items begins
+        # Skip until Items begins, each object inside Items is a JSON file, where each line is an article
         for line in f:
             s = line.strip()
-            if s and '"Items"' in s and "[" in s:
+            if s and '"Items"' in s and "[" in s: # that's where we start
                 break
 
         for line in f:
             s = line.strip()
             if not s:
                 continue
-            if s.startswith("]}") or s == "]}" or s == "]":
+            if s.startswith("]}") or s == "]}" or s == "]": # thats where article ends
                 break
 
             # remove trailing comma between JSON objects
-            if s.endswith(","):
+            if s.endswith(","): # we dont want final commas
                 s = s[:-1].rstrip()
             # defensive
             if s.endswith("]}"):
                 s = s[:-2].rstrip()
 
-            if not s.startswith("{"):
+            if not s.startswith("{"): # if it doesnt start like this ignore
                 continue
 
             try:
@@ -56,7 +56,7 @@ def iter_rtrs_items_from_gz(gz_path: Path) -> Iterator[Dict]:
 # ----------------------------
 # Filters & extraction
 # ----------------------------
-def is_english(item: Dict) -> bool:
+def is_english(item: Dict) -> bool: # keep only articles in english 
     data = item.get("data")
     if not isinstance(data, dict):
         return False
@@ -67,7 +67,7 @@ def is_english(item: Dict) -> bool:
     return True  # permissive if missing
 
 
-def is_diary_item(item: Dict) -> bool:
+def is_diary_item(item: Dict) -> bool: # i want to eliminate diary items 
     data = item.get("data")
     if not isinstance(data, dict):
         return False
@@ -88,7 +88,7 @@ def extract_doc_text(item: Dict, include_headline: bool = True) -> Optional[str]
         h = data.get("headline")
         if isinstance(h, str) and h.strip():
             parts.append(h.strip())
-    b = data.get("body")
+    b = data.get("body") # extract doc as headline and body
     if isinstance(b, str) and b.strip():
         parts.append(b.strip())
 
@@ -99,11 +99,11 @@ def extract_doc_text(item: Dict, include_headline: bool = True) -> Optional[str]
 # Look for subjects like "N2:JP", "N2:US", etc.
 SUBJ_GEO = re.compile(r"^N2:([A-Z]{2,3})$")
 
-# Exclude some common non-geo N2 tags (you can extend over time)
+# Exclude some common non-geo N2 tags (extendable)
 EXCLUDE_N2 = {
     "RTRS", "CEN", "DIARY", "LEN", "D+", "D", "ECO", "COM", "POL",
     "LDE", "LFR", "LGN", "LSP", "LIT"
-}
+} 
 
 
 def extract_countries_from_subjects(subjects: List[str]) -> List[str]:
@@ -111,11 +111,11 @@ def extract_countries_from_subjects(subjects: List[str]) -> List[str]:
     for s in subjects:
         if not isinstance(s, str):
             continue
-        m = SUBJ_GEO.match(s)
+        m = SUBJ_GEO.match(s) # if it matches 
         if m:
             code = m.group(1)
-            if code not in EXCLUDE_N2:
-                countries.append(code)
+            if code not in EXCLUDE_N2: # and its not in the excluded list
+                countries.append(code) # append to the countries
     # unique + stable ordering
     return sorted(set(countries))
 
@@ -191,28 +191,28 @@ DEFAULT_STOPWORDS = {
     "you","your","yours","yourself","yourselves"
 }
 
-RE_HTML = re.compile(r"<[^>]+>")
-RE_URL = re.compile(r"https?://\S+|www\.\S+", flags=re.IGNORECASE)
-RE_MULTISPACE = re.compile(r"\s+")
+RE_HTML = re.compile(r"<[^>]+>") # remove HTML
+RE_URL = re.compile(r"https?://\S+|www\.\S+", flags=re.IGNORECASE) # remove URL
+RE_MULTISPACE = re.compile(r"\s+") # normalise multiple spaces
 
 RE_DATALINE = re.compile(
     r"^\s*[A-Z][A-Z .'\-]{2,40},\s+[A-Z][a-z]{2}\s+\d{1,2}\s*\(Reuter[s]?\)\s*-\s*",
     flags=re.MULTILINE
-)
+) # tries to delete reuters headline
 RE_CREDITS = re.compile(
     r"\b(Reporting by|Writing by|Editing by|Additional reporting by)\b.*$",
     flags=re.IGNORECASE | re.MULTILINE
-)
+) # delets credits
 
-RE_BRACKETS = re.compile(r"\[[^\]]+\]")
-RE_DOUBLE_CLICK_LINE = re.compile(r"(?im)^[^\n]*\bdouble[- ]click\b[^\n]*$")
+RE_BRACKETS = re.compile(r"\[[^\]]+\]") # removes things between brackets
+RE_DOUBLE_CLICK_LINE = re.compile(r"(?im)^[^\n]*\bdouble[- ]click\b[^\n]*$") # removes lines that contain "double click"
 RE_TOLD_REUTERS = re.compile(r"(?i)\btold reuters\b")
 RE_REUTER_TERMINAL = re.compile(r"(?i)\breuter terminal\b")
 
-TOKEN_RE = re.compile(r"[a-z]+(?:'[a-z]+)?")
+TOKEN_RE = re.compile(r"[a-z]+(?:'[a-z]+)?") # cleaning of tokens, lower case and no numbers, underscore, ...
 
-def normalize_text(raw: str) -> str:
-    x = raw.replace("\u00a0", " ")
+def normalize_text(raw: str) -> str: # cleaning
+    x = raw.replace("\u00a0", " ") # substitute non breaking space with a normal whitespace
     x = RE_HTML.sub(" ", x)
     x = RE_URL.sub(" ", x)
 
@@ -230,11 +230,11 @@ def normalize_text(raw: str) -> str:
     return x
 
 def tokenize(text: str, remove_stopwords: bool, min_token_len: int) -> List[str]:
-    toks = TOKEN_RE.findall(text.lower())
+    toks = TOKEN_RE.findall(text.lower()) # list of tokens
     if remove_stopwords:
-        toks = [t for t in toks if t not in DEFAULT_STOPWORDS]
+        toks = [t for t in toks if t not in DEFAULT_STOPWORDS] # filter via stopwords
     if min_token_len > 1:
-        toks = [t for t in toks if len(t) >= min_token_len]
+        toks = [t for t in toks if len(t) >= min_token_len] # filter via min lenght
     return toks
 
 
@@ -249,7 +249,7 @@ def list_year_gz_files(year_dir: Path, pattern: str = "*.txt.gz") -> List[Path]:
 
 
 def iter_docs_with_meta(
-    year_dir: Path,
+    year_dir: Path, # year directory
     remove_stopwords: bool,
     include_headline: bool,
     min_doc_tokens: int,
@@ -310,7 +310,7 @@ def iter_docs_with_meta(
                     continue
 
                 meta = extract_meta(item, gz_path)
-                yield toks, meta
+                yield toks, meta # i get tokens and meta data
         except (EOFError, OSError) as e:
             print(f"[WARN] Skipping unreadable gzip: {gz_path} ({type(e).__name__}: {e})")
             continue
@@ -328,7 +328,7 @@ def iter_docs_for_phrase_learning(
     n_files: int = 0,
     file_glob: str = "*.txt.gz",
 ) -> Iterator[List[str]]:
-    for toks, _meta in iter_docs_with_meta(
+    for toks, _meta in iter_docs_with_meta( #ignores meta
         year_dir=year_dir,
         remove_stopwords=remove_stopwords,
         include_headline=include_headline,
@@ -341,7 +341,7 @@ def iter_docs_for_phrase_learning(
     ):
         if phrase_ignore_terms:
             toks2 = [t for t in toks if t not in phrase_ignore_terms]
-            if len(toks2) >= min_doc_tokens:
+            if len(toks2) >= min_doc_tokens: # if its larger than min doc tokens
                 yield toks2
         else:
             yield toks
@@ -360,11 +360,11 @@ def main():
     ap.add_argument("--remove_stopwords", action="store_true")
     ap.add_argument("--drop_diary", action="store_true")
 
-    ap.add_argument("--min_doc_tokens", type=int, default=10)
-    ap.add_argument("--min_token_len", type=int, default=2)
+    ap.add_argument("--min_doc_tokens", type=int, default=10) # min tokens doc 10
+    ap.add_argument("--min_token_len", type=int, default=2) # min token lenghth 2
 
-    ap.add_argument("--phrase_min_count", type=int, default=20)
-    ap.add_argument("--phrase_threshold", type=float, default=10.0)
+    ap.add_argument("--phrase_min_count", type=int, default=20) #each phrase at least 20
+    ap.add_argument("--phrase_threshold", type=float, default=10.0) # phrase threshold at 10, higher the threshold, less bigrams
 
     # NEW: chunking support
     ap.add_argument("--file_offset", type=int, default=0,
@@ -392,7 +392,7 @@ def main():
     }
 
     print("[INFO] Pass 1/2: learning bigrams...")
-    phrases = Phrases(
+    phrases = Phrases( # it goes through all tokens and sees how often 2 words appear together, if its more than min and has a score greater than threshold, it becomes a bigram
         sentences=iter_docs_for_phrase_learning(
             year_dir=year_dir,
             remove_stopwords=args.remove_stopwords,
@@ -407,7 +407,7 @@ def main():
         ),
         min_count=args.phrase_min_count,
         threshold=args.phrase_threshold,
-        delimiter="_"   # MUST be str for your gensim version
+        delimiter="_"   # MUST be str for gensim version
     )
     phraser = Phraser(phrases)
 
