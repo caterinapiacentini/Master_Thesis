@@ -16,17 +16,23 @@ ml load python/3.11.11-gcc-15.1.0-u2m6tuq
 PY="$HOME/venvs/rtrs_w2v/bin/python"
 SCRIPT="$HOME/master_thesis/scripts/train_w2v_all.py"
 
-DATA_DIR="$HOME/master_thesis/clean_txt/DATA"
-MODEL_DIR="$HOME/master_thesis/models"
+# --- MODIFIED DIRECTORIES ---
+DATA_DIR="$HOME/master_thesis/clean_txt/DATA1"
+MODEL_DIR="$HOME/master_thesis/models/new_models"
 
+# Ensure the new models directory exists
+mkdir -p "$MODEL_DIR"
+# ----------------------------
+
+# --- UPDATED PARAMETERS FOR GTM ---
 $PY -u "$SCRIPT" \
   --data_dir "$DATA_DIR" \
-  --out_model "$MODEL_DIR/rtrs_1996_2025_w2v.model" \
-  --out_vectors "$MODEL_DIR/rtrs_1996_2025_w2v.kv" \
-  --workers 8 \
-  --vector_size 300 \
-  --window 10 \
+  --out_model "$MODEL_DIR/w2v_cbow_64_window_18_100_epochs_1996_2025.model" \
+  --out_pkl "$MODEL_DIR/w2v_cbow_64_window_18_100_epochs_1996_2025.pkl" \
+  --workers 24 \
+  --vector_size 64 \
+  --window 18 \
   --min_count 20 \
   --negative 10 \
-  --epochs 5 \
-  --sg 1
+  --epochs 100 \
+  --sg 0

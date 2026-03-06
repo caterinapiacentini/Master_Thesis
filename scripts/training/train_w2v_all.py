@@ -3,6 +3,7 @@
 
 import argparse
 import gzip
+import pickle # Added for GTM compatibility
 from pathlib import Path
 from typing import Iterator, List
 from gensim.models import Word2Vec
@@ -28,17 +29,19 @@ def main():
 
     ap.add_argument("--data_dir", required=True)
     ap.add_argument("--out_model", required=True)
-    ap.add_argument("--out_vectors", required=True)
+    ap.add_argument("--out_pkl", required=True) # Changed from out_vectors to out_pkl
 
-    ap.add_argument("--vector_size", type=int, default=300) # embedding dimension 300
-    ap.add_argument("--window", type=int, default=10) # context window size for gensim
+    # --- HYPERPARAMETERS ADJUSTED FOR GTM METHODOLOGY ---
+    ap.add_argument("--vector_size", type=int, default=64) # embedding dimension 64 (per Dangl)
+    ap.add_argument("--window", type=int, default=18) # context window size 18 (per Dangl)
     ap.add_argument("--min_count", type=int, default=20) # ignore tokens that appear less than 20 times
-    ap.add_argument("--negative", type=int, default=10) # number of negatuve sample
+    ap.add_argument("--negative", type=int, default=10) # number of negative samples 10 (per Dangl)
     ap.add_argument("--sample", type=float, default=1e-5) # subsampling threshold for frequent words
-    ap.add_argument("--epochs", type=int, default=5) #training passes over corpus 
-    ap.add_argument("--sg", type=int, default=1) # default to skip grams
+    ap.add_argument("--epochs", type=int, default=100) # training passes over corpus 100 (per Dangl)
+    ap.add_argument("--sg", type=int, default=0) # 0 for CBOW (per Dangl)
     ap.add_argument("--workers", type=int, default=8) # number of threads
     ap.add_argument("--seed", type=int, default=42) # seeds for reproducibility 
+    # ----------------------------------------------------
 
     args = ap.parse_args()
 
@@ -51,7 +54,8 @@ def main():
     print(f"[INFO] Found {len(files)} files")
 
     sentences = GzCorpus(files)
-# initialise untrained word2vec model
+    
+    # initialise untrained word2vec model
     model = Word2Vec(
         vector_size=args.vector_size,
         window=args.window,
@@ -75,16 +79,22 @@ def main():
     )
 
     out_model = Path(args.out_model).expanduser().resolve()
-    out_vectors = Path(args.out_vectors).expanduser().resolve()
+    out_pkl = Path(args.out_pkl).expanduser().resolve()
 
     out_model.parent.mkdir(parents=True, exist_ok=True)
-    out_vectors.parent.mkdir(parents=True, exist_ok=True)
+    out_pkl.parent.mkdir(parents=True, exist_ok=True)
 
     print(f"[INFO] Saving model -> {out_model}") # save all word2vec model --> training configuration, weights, vocabulary, etc.
     model.save(str(out_model))
 
-    print(f"[INFO] Saving vectors -> {out_vectors}") # saves just word vectors + vocab keys, less computationally heavy.
-    model.wv.save(str(out_vectors))
+    # --- METHODOLOGY CHANGE: SAVE AS PICKLED DICT ---
+    print(f"[INFO] Extracting vectors to dictionary and saving -> {out_pkl}")
+    # GTM expects a pure Python dictionary mapping strings to vectors
+    embeddings_dict = {word: model.wv[word] for word in model.wv.index_to_key}
+    
+    with open(out_pkl, "wb") as f:
+        pickle.dump(embeddings_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
+    # ------------------------------------------------
 
     print("[OK] Done.")
 
