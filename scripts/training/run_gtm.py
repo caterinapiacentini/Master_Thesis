@@ -10,7 +10,7 @@ import argparse
 import pickle
 import json
 import os
-from numpy.linalg import inv, norm
+from numpy.linalg import inv, norm, pinv
 from wordcloud import WordCloud
 from scipy import optimize
 from datetime import datetime
@@ -81,7 +81,8 @@ class GTM():
 
     def func(self, a, W_orth, I, X, C, weights, params):
         self.X_new = X + W_orth @ np.diag(a)
-        H_A   = self.X_new @ np.linalg.inv(self.X_new.T @ self.X_new) @ self.X_new.T
+        # --- CHANGED inv TO pinv ---
+        H_A   = self.X_new @ np.linalg.pinv(self.X_new.T @ self.X_new) @ self.X_new.T
         RSS   = np.sum((((I-H_A) @ C) @ np.diag(weights))**2)
         return RSS    
             
@@ -95,7 +96,8 @@ class GTM():
         topics_dict = {}
         for i, w in enumerate(self.topic):
             v = self.embeddings_dict[w]
-            b = np.linalg.inv(X.T@X) @ (X.T @ v)
+            # --- CHANGED inv TO pinv ---
+            b = np.linalg.pinv(X.T@X) @ (X.T @ v)
             v_hat = X @ b
             topics_dict[w] = np.linalg.norm(v_hat)
             
@@ -189,7 +191,8 @@ class GTM():
         
         while run == True:
             j += 1            
-            B     = np.linalg.inv(X.T@X) @ X.T @ V
+            # --- CHANGED inv TO pinv ---
+            B     = np.linalg.pinv(X.T@X) @ X.T @ V
             B_adj = np.diag(pos_weights) @ B                                          
             sel_coeff = B_adj.sum(axis=0) > 0.5*max(pos_weights)           
             V_proj_adj= X @ B_adj[:,sel_coeff] 

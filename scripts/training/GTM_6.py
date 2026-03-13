@@ -9,15 +9,12 @@ import sys
 import faiss
 import argparse
 import pickle
+import json
 import os
-import random
 from numpy.linalg import inv, norm
 from wordcloud import WordCloud
 from scipy import optimize
-
-# --- LOCK RANDOM SEED FOR REPRODUCIBILITY ---
-np.random.seed(42)
-random.seed(42)
+from datetime import datetime
 
 class SimilarityMeasure():
     def __init__(self, sim_measure='cos_similarity'):
@@ -25,13 +22,20 @@ class SimilarityMeasure():
     
     def calc_similarity(self, X, Y):
         if self.sim_measure == 'cos_similarity':
-            norm_X = norm(X, axis=1) if X.ndim > 1 else norm(X)
-            norm_Y = norm(Y, axis=1) if Y.ndim > 1 else norm(Y)        
+            if X.ndim > 1: 
+                norm_X = norm(X, axis=1) 
+            else: 
+                norm_X = norm(X)
+            if Y.ndim > 1: 
+                norm_Y = norm(Y, axis=1) 
+            else: 
+                norm_Y = norm(Y)        
             if Y.ndim > X.ndim:
                 cs = np.dot(Y,X)/(norm_X*norm_Y)
             else:
                 cs = np.dot(X,Y)/(norm_X*norm_Y)       
             return cs
+
         elif self.sim_measure == 'cos_angle':     
             a = np.sqrt(np.dot(X,X))
             b = np.sqrt(np.dot(Y,Y))
@@ -42,6 +46,9 @@ class SimilarityMeasure():
             else:
                 cosine = 0
             return cosine
+            
+        else:
+            print(f"{self.sim_measure} not available!")
 
 class Get_PCA_Embds(object):
     def __init__(self, pca_embds):
@@ -63,7 +70,9 @@ class GTM():
         self.vocab_series    = pd.Series(vocab_list)
         self.embeddings_dict = Get_PCA_Embds(pca_embds)
         self.cos_angle       = SimilarityMeasure(sim_measure='cos_angle').calc_similarity
+        self.cos_similarity  = SimilarityMeasure(sim_measure='cos_similarity').calc_similarity          
         
+        # Efficient similarity search using Faiss
         self.xb = self.embeddings_dict[vocab_list].astype(np.float32)
         quantizer  = faiss.IndexFlatL2(embd_dim)
         self.index = faiss.IndexIVFFlat(quantizer, embd_dim, nlist)
@@ -91,47 +100,69 @@ class GTM():
             v_hat = X @ b
             topics_dict[w] = np.linalg.norm(v_hat)
             
+        # UPGRADED RESOLUTION: 1920x1080 canvas
         wordcloud = WordCloud(width=1920, height=1080, max_words=800, relative_scaling=1, normalize_plurals=False, background_color="rgba(255, 255, 255, 1)", mode="RGBA")
         wordcloud = wordcloud.generate_from_frequencies(topics_dict)
         sorted_topics_dict = dict(sorted(topics_dict.items(), key=lambda item: item[1], reverse=True))
 
+        # UPGRADED FIGURE SIZE: 16:9 ratio
         fig = plt.figure(figsize=(16, 9))
         plt.imshow(wordcloud, interpolation="bilinear")
         plt.axis("off")
+        
+        # UPGRADED DPI: 300 (Print quality)
         plt.savefig(f"./output/WordClouds/{self.filename}.png", dpi=300, facecolor='w', edgecolor='w', orientation='portrait', bbox_inches='tight')
         plt.close(fig)  
 
         return sorted_topics_dict
           
-    def run(self, params, pos_seed, neg_seed, topic_name): 
+    def run(self, params, pos_seed, neg_seed, topic_name=None): 
         run, j         = True, 0                   
         proj_subspace  = [pos_seed[i][0] for i,_ in enumerate(pos_seed)]
         
-        neg_seed_words = [neg_seed[i][0] for i,_ in enumerate(neg_seed)] if neg_seed else []
-        neg_seed_word_str = " ".join(neg_seed_words)
+        neg_seed_word_str = ""
+        try:
+            neg_seed_words = [neg_seed[i][0] for i,_ in enumerate(neg_seed)]
+            for ns in neg_seed_words:
+                neg_seed_word_str += ns+"  "
+        except:
+            neg_seed_words = []
             
         pos_weights = np.array([pos_seed[i][1] for i,_ in enumerate(pos_seed)])        
         neg_weights = np.array([neg_seed[i][1] for i,_ in enumerate(neg_seed)])              
                     
         self.topic = [pos_seed[i][0] for i,_ in enumerate(pos_seed) if pos_seed[i][1] > 0]
-        self.filename = f"topic_{topic_name}"
-        pos_seed_word_str = " ".join(self.topic)
+         
+        # Dynamically create filename based on topic_name from Slurm, or fallback to original
+        if topic_name:
+            self.filename = f"topic_{topic_name}"
+        else:
+            topic_name_base = "_".join(self.topic[:min(2, len(self.topic))])
+            self.filename = f"topic_{topic_name_base}_" + datetime.now().strftime('%Hh_%Mm_%Ss')
 
+        # Ensure output directories exist
         os.makedirs('./output/WordClouds', exist_ok=True)
 
+        pos_seed_word_str = " ".join(self.topic)
+
+        # Create log file strictly in the output folder
         with open(f"./output/log_{self.filename}.txt", 'w') as f:
-            f.write(f"Guided Topic Modeling: {topic_name}\n\
+            f.write(f"Guided Topic Modeling\n\
                     \nTopic Size:            {params['cluster_size']}\
                     \nGravity:               {params['gravity']}\
                     \nPositive seed words:   {pos_seed_word_str}\
                     \nNegative seed words:   {neg_seed_word_str}\n\n"
             )        
     
-        xq = self.embeddings_dict[proj_subspace+neg_seed_words].astype(np.float32)   
+        # Similarity Search
+        xq = self.embeddings_dict[proj_subspace+neg_seed_words].astype(np.float32)   # query vectors
         _, sim_idx = self.index.search(xq, params['k-similar'])        
         bucket_idx = np.unique(sim_idx.flatten())  
        
-        V_buckets  = pd.DataFrame(index = self.vocab_series[bucket_idx], data = {'vector': list(self.xb[bucket_idx,:])})
+        V_buckets  = pd.DataFrame(index = self.vocab_series[bucket_idx], 
+                                  data  = {'vector': list(self.xb[bucket_idx,:])})
+        
+        self.V_bucket = V_buckets
         
         A = None
         for i, w in enumerate(proj_subspace):           
@@ -146,6 +177,7 @@ class GTM():
                 N = b if i == 0 else np.hstack((N, b))
                 V_buckets = V_buckets.drop([w])
      
+            # Adjust A by the negative seed words
             if N.ndim == 1 or N.shape[1] == 1:
                 N_vector = N.reshape(-1) if N.ndim > 1 else N
                 A = self.UnitColumns(A @ np.diag(pos_weights) + np.outer(N_vector, neg_weights))
@@ -154,7 +186,7 @@ class GTM():
          
         V = np.vstack(V_buckets.vector).T    
         X, C = A.copy(), A.copy()
-        C_orth = np.array([])
+        C_orth, self.var, self.resid_mean = np.array([]), np.array([]), np.array([])
         I = np.identity(X.shape[0]) 
         weights = pos_weights   
         gravity = params['gravity']
@@ -188,38 +220,54 @@ class GTM():
             
             if (j % params['update_freq']) == 0:                               
                 W_orth = np.array([w_orth.T]*X.shape[1]).T           
-                optimize.minimize(self.func, [0]*X.shape[1], method="CG", args=(W_orth, I, X, C, weights, params)) 
-                X = self.UnitColumns(self.X_new)                                                                        
+                result = optimize.minimize(self.func, [0]*X.shape[1], method="CG", args=(W_orth, I, X, C, weights, params)) 
+                X      = self.UnitColumns(self.X_new)                                                                        
             
             V_buckets = V_buckets.drop([new_word])                       
             V = np.vstack(V_buckets.vector).T    
+            
             gravity = max(0, gravity - params['gravity']/params['cluster_size'])       
+                        
+            if j == 1:
+                C_orth = V_orth[:, min_idx]   
+                self.resid_sum = np.array([norm(C_orth)])
+            else:
+                C_orth   = np.vstack([C_orth.T, V_orth[:, min_idx]]).T
+                self.var = np.append(self.var, np.var(C_orth, axis=1).mean())
+                self.resid_mean = np.append(self.resid_mean, norm(C_orth, axis=0).mean())
                                 
+            print(f"{new_word: <30} word #{j:<3}; angle: {alpha_min:.3f}")
             if ((alpha_min > params['alpha_max']) & (j >= 10)) or (C.shape[1] >= params['cluster_size']) or (len(true_idx) == 1):
                 run = False
 
         topics_dict = self.GenWordCloud(X)
-        
-        df = pd.DataFrame.from_dict(topics_dict, orient='index', columns=["weight"])
-        df.to_csv(f'./output/{self.filename}.csv', encoding='utf-8', index=True)
+        topics_dict = pd.DataFrame.from_dict(topics_dict, orient='index', columns=["weight"])
+        topics_dict.to_csv(f'./output/{self.filename}.csv', encoding='utf-8', index=True)
 
         temp_log = ""
-        for i, word in enumerate(df.index):
-            temp_log += f"#{i:<3} {word: <30} weight: {df.loc[word, 'weight']:.3f}\n"
+        for i, word in enumerate(topics_dict.index):
+            temp_log += f"#{i:<3} {word: <30} weight: {topics_dict.loc[word, 'weight']:.3f}\n"
+
+        # Append to the log file strictly in the output folder
         with open(f"./output/log_{self.filename}.txt", 'a') as f:   
             f.write(temp_log) 
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    
+    # --- ADDED ARGUMENTS FOR MULTI-TOPIC & GRID ---
     parser.add_argument('--combine_grid', action='store_true', help="Combine 6 existing wordclouds into a 2x3 grid")
     parser.add_argument('--topic_name', type=str, required=False, help="Name of the sub-topic")
+    
+    # --- DYNAMIC LIST ARGUMENTS (Set to required=False so --combine_grid runs cleanly) ---
     parser.add_argument('--model_path', type=str, required=False, help="Path to your Word2Vec .pkl dictionary")
-    parser.add_argument('--pos_words', nargs='+', type=str, required=False, help="List of positive seed words")
-    parser.add_argument('--pos_weights', nargs='+', type=float, required=False, help="List of weights for positive seeds")
+    parser.add_argument('--pos_words', nargs='+', type=str, required=False, help="List of positive seed words (e.g. sanctions tariffs)")
+    parser.add_argument('--pos_weights', nargs='+', type=float, required=False, help="List of weights for positive seeds (e.g. 1.0 1.0)")
     parser.add_argument('--neg_words', nargs='+', type=str, required=False, default=[], help="List of negative seed words")
     parser.add_argument('--neg_weights', nargs='+', type=float, required=False, default=[], help="List of weights for negative seeds")
     parser.add_argument('--size', type=str, required=False, help="Number of words to collect")
-    parser.add_argument('--gravity', type=str, required=False, help="Gravity parameter")
+    parser.add_argument('--gravity', type=str, required=False, help="Gravity parameter (e.g. 1.5)")
     
     args = parser.parse_args()
 
@@ -257,30 +305,30 @@ if __name__ == '__main__':
     # ---------------------------------------------------------
     # NORMAL GTM PROCESSING MODE
     # ---------------------------------------------------------
-    if not args.topic_name or not args.model_path or not args.pos_words or not args.pos_weights or not args.size or not args.gravity:
+    if not args.model_path or not args.pos_words or not args.pos_weights or not args.size or not args.gravity:
         print("Error: Missing required arguments for GTM run.")
         sys.exit(1)
 
-    print(f'Initialize GTM for topic: {args.topic_name}')
+    run = True
+    print('Initialize GTM')
     gtm = GTM(model_path=args.model_path)
 
     if len(args.pos_words) != len(args.pos_weights):
-        print("Error: Positive words must match positive weights.")
+        print("Error: The number of positive words must match the number of positive weights.")
         sys.exit(1)
     if len(args.neg_words) != len(args.neg_weights):
-        print("Error: Negative words must match negative weights.")
+        print("Error: The number of negative words must match the number of negative weights.")
         sys.exit(1)
 
     pos_seed = list(zip(args.pos_words, args.pos_weights))
     neg_seed = list(zip(args.neg_words, args.neg_weights))
 
-    run_topic = True
     for word_i in pos_seed + neg_seed:
         if word_i[0] not in gtm.vocab_series.values:
             print(f"Error: '{word_i[0]}' is not in the GTM vocabulary! Check for spelling or missing bigram underscores.")
-            run_topic = False
+            run = False
 
-    if run_topic:
+    if run:
         params = {
             'cluster_size': float(args.size),      
             'gravity'    :  float(args.gravity),
@@ -289,6 +337,6 @@ if __name__ == '__main__':
             'k-similar'  :  5000,     
         }
 
-        print(f'Generate Topic: {args.topic_name}')
-        gtm.run(params, pos_seed, neg_seed, args.topic_name)
-        print(f"\n[OK] Topic '{args.topic_name}' generation complete!")
+        print('Generate Topic')
+        gtm.run(params, pos_seed, neg_seed, topic_name=args.topic_name)
+        print("\n[OK] Topic generation complete! Check the './output' folder for your CSV, PNG, and TXT log.")
