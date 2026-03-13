@@ -14,7 +14,11 @@ ml load python/3.11.11-gcc-15.1.0-u2m6tuq
 
 cd "$HOME/master_thesis"
 PY="$HOME/venvs/rtrs_w2v/bin/python"
-SCRIPT="$HOME/master_thesis/scripts/run_gtm.py"
+
+# --- UPDATED SCRIPT PATH ---
+SCRIPT="$HOME/master_thesis/scripts/GTM_6.py"
+# ---------------------------
+
 MODEL_PATH="$HOME/master_thesis/models/new_models/w2v_cbow_64_window_18_50_epochs_1996_2025.pkl"
 
 echo "Starting Guided Topic Modeling for 6 Subcategories..."
