@@ -39,7 +39,8 @@ echo "============================================================"
 
 # ------------------------------------------------------------------
 # 1. Sanctions
-#    Rank 1 — highest coverage; distinctive vocabulary, low polysemy
+#    Anchors: economic_sanctions + sanctions_regime
+#    Negatives: sanctions_relief + sanctions_waiver [both OK]
 # ------------------------------------------------------------------
 echo "[Processing 1/8: Sanctions]"
 $PY -u "$SCRIPT" \
@@ -55,23 +56,25 @@ $PY -u "$SCRIPT" \
 
 # ------------------------------------------------------------------
 # 2. Trade War
-#    Rank 2 — escalation framing; dominant in US-China 2018-2020
+#    Anchors: trade_war + trade_conflict
+#    Negatives: trade_deal + trade_pact  [trade_agreement MISSING → trade_pact]
 # ------------------------------------------------------------------
 echo "[Processing 2/8: Trade War]"
 $PY -u "$SCRIPT" \
     --topic_name   "Trade_War" \
     --output_dir   "$OUTPUT_DIR" \
     --model_path   "$MODEL_PATH" \
-    --pos_words    trade_war trade_dispute \
+    --pos_words    trade_war trade_conflict \
     --pos_weights  1.0 1.0 \
-    --neg_words    trade_deal trade_agreement \
+    --neg_words    trade_deal trade_pact \
     --neg_weights  0.5 0.5 \
     --size         "$CLUSTER_SIZE" \
     --gravity      "$GRAVITY"
 
 # ------------------------------------------------------------------
 # 3. Export Controls
-#    Rank 3 — critical post-2018 (Huawei, TSMC, semiconductors)
+#    Anchors: export_ban + export_restriction
+#    Negatives: export_license  [export_approval/export_permitted MISSING]
 # ------------------------------------------------------------------
 echo "[Processing 3/8: Export Controls]"
 $PY -u "$SCRIPT" \
@@ -80,15 +83,15 @@ $PY -u "$SCRIPT" \
     --model_path   "$MODEL_PATH" \
     --pos_words    export_ban export_restriction \
     --pos_weights  1.0 1.0 \
-    --neg_words    export_license export_approval \
-    --neg_weights  0.5 0.5 \
+    --neg_words    export_license \
+    --neg_weights  0.5 \
     --size         "$CLUSTER_SIZE" \
     --gravity      "$GRAVITY"
 
 # ------------------------------------------------------------------
 # 4. Tariffs
-#    Rank 4 — instrument-level; captures technical articles outside
-#    "trade war" framing (Section 301/232, steel/aluminium duties)
+#    Anchors: import_tariff + customs_duty
+#    Negatives: free_trade + tariff_exemption [both OK]
 # ------------------------------------------------------------------
 echo "[Processing 4/8: Tariffs]"
 $PY -u "$SCRIPT" \
@@ -104,42 +107,47 @@ $PY -u "$SCRIPT" \
 
 # ------------------------------------------------------------------
 # 5. Financial Coercion
-#    Rank 5 — SWIFT exclusions (Iran 2012, Russia 2022),
-#    dollar weaponization, Belt & Road debt leverage
+#    Anchors: asset_freeze + frozen_assets
+#    [All "financial_*", "dollar_weaponization", "swift_exclusion" MISSING —
+#    these concepts are too recent/niche for the model's vocabulary.
+#    asset_freeze + frozen_assets are the best confirmed anchors in this space]
+#    Negatives: debt_relief  [debt_trap MISSING]
 # ------------------------------------------------------------------
 echo "[Processing 5/8: Financial Coercion]"
 $PY -u "$SCRIPT" \
     --topic_name   "Financial_Coercion" \
     --output_dir   "$OUTPUT_DIR" \
     --model_path   "$MODEL_PATH" \
-    --pos_words    financial_exclusion dollar_weaponization \
+    --pos_words    asset_freeze frozen_assets \
     --pos_weights  1.0 1.0 \
-    --neg_words    financial_integration debt_relief \
-    --neg_weights  0.5 0.5 \
+    --neg_words    debt_relief \
+    --neg_weights  0.5 \
     --size         "$CLUSTER_SIZE" \
     --gravity      "$GRAVITY"
 
 # ------------------------------------------------------------------
 # 6. Retaliation
-#    Rank 6 — reactive escalation language; anchors
-#    provocation-retaliation sequences across dyads
+#    Anchors: retaliation + retaliatory_measures
+#    [Previous run used retaliatory_tariff + countermeasure — too far
+#    apart in the embedding space, caused random drift with angles >1.0]
+#    Negatives: concessions + goodwill_gesture [both OK]
 # ------------------------------------------------------------------
 echo "[Processing 6/8: Retaliation]"
 $PY -u "$SCRIPT" \
     --topic_name   "Retaliation" \
     --output_dir   "$OUTPUT_DIR" \
     --model_path   "$MODEL_PATH" \
-    --pos_words    retaliatory_tariff countermeasure \
+    --pos_words    retaliation retaliatory_measures \
     --pos_weights  1.0 1.0 \
-    --neg_words    goodwill_gesture concession \
+    --neg_words    concessions goodwill_gesture \
     --neg_weights  0.5 0.5 \
     --size         "$CLUSTER_SIZE" \
     --gravity      "$GRAVITY"
 
 # ------------------------------------------------------------------
 # 7. Protectionism
-#    Rank 7 — structural/policy framing; subsidy disputes,
-#    industrial policy (Buy American, Made in China 2025)
+#    Anchors: protectionism + import_quota
+#    Negatives: trade_liberalization  [open_market/open_markets/free_markets MISSING]
 # ------------------------------------------------------------------
 echo "[Processing 7/8: Protectionism]"
 $PY -u "$SCRIPT" \
@@ -148,24 +156,27 @@ $PY -u "$SCRIPT" \
     --model_path   "$MODEL_PATH" \
     --pos_words    protectionism import_quota \
     --pos_weights  1.0 1.0 \
-    --neg_words    trade_liberalization open_market \
-    --neg_weights  0.5 0.5 \
+    --neg_words    trade_liberalization \
+    --neg_weights  0.5 \
     --size         "$CLUSTER_SIZE" \
     --gravity      "$GRAVITY"
 
 # ------------------------------------------------------------------
 # 8. Embargo
-#    Rank 8 — lower frequency but semantically tight;
-#    Cuba, Iraq/Iran oil, arms embargoes
+#    Anchors: trade_embargo + oil_embargo
+#    [Swapped arms_embargo → oil_embargo: arms_embargo was already
+#    captured at word #52 in the Sanctions run, so using oil_embargo
+#    pulls this topic toward energy/commodity coercion instead]
+#    Negatives: lift_embargo  [embargo_lifted/lifting_embargo MISSING]
 # ------------------------------------------------------------------
 echo "[Processing 8/8: Embargo]"
 $PY -u "$SCRIPT" \
     --topic_name   "Embargo" \
     --output_dir   "$OUTPUT_DIR" \
     --model_path   "$MODEL_PATH" \
-    --pos_words    trade_embargo arms_embargo \
+    --pos_words    trade_embargo oil_embargo \
     --pos_weights  1.0 1.0 \
-    --neg_words    embargo_lifted \
+    --neg_words    lift_embargo \
     --neg_weights  0.5 \
     --size         "$CLUSTER_SIZE" \
     --gravity      "$GRAVITY"
