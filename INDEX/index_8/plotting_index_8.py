@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-df = pd.read_csv("GEP_Monthly_Index.csv")
+df = pd.read_csv("~/Desktop/tesi/Master_Thesis/INDEX/index_8/GEP_Monthly_Index.csv")
 df['month'] = pd.to_datetime(df['month'])
 df['GEP_monthly_scaled'] = df['GEP_monthly'] * 10_000
 
@@ -20,13 +20,13 @@ peaks = {
     '1998-08': 'Russian Ruble Crisis',
     '2001-09': '9/11 attacks',
     '2003-11': 'Iraq War',
-    '2008-01': 'GFC',
-    '2011-08': 'Eurozone crisis',
+    '2008-09': 'GFC',
+    '2011-08': 'Black Monday 2011',
     '2014-03': 'Crimea annexation',
     '2018-07': 'US-China trade war',
     '2020-03': 'COVID-19',
     '2022-02': 'Russia invades Ukraine',
-    '2025-04': 'Trade war peak',
+    '2025-04': 'Liberation Day Trump 2025',
 }
 for month_str, label in peaks.items():
     row = df[df['month'] == month_str]
