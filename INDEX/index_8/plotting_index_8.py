@@ -184,7 +184,7 @@ fig, ax = plt.subplots(figsize=(16, 28))
 
 # Daily dots
 ax.scatter(daily_obs['score_scaled'], daily_obs['date'],
-           s=2.5, color='#5BADC8', alpha=0.30, linewidths=0, zorder=2,
+           s=28, color='#27AE60', alpha=0.30, linewidths=0, zorder=2,
            label='Daily GEP score')
 
 # Monthly line
@@ -196,14 +196,14 @@ ax.plot(monthly['GEP_monthly_scaled'], monthly['month'],
 for peak_date, peak_score, label, label_date in spread:
     # Red dot at the daily peak
     ax.scatter(peak_score, peak_date,
-               s=28, color='#C0392B', zorder=5, linewidths=0)
+               s=25, color='#C0392B', zorder=5, linewidths=0)
 
     # Arrow from label position → peak dot
     ax.annotate(
         label,
         xy       =(peak_score,  peak_date),    # arrowhead at peak
         xytext   =(X_LABEL,     label_date),   # text anchor
-        fontsize =6.8,
+        fontsize =13,
         ha       ='left',
         va       ='center',
         color    ='#1A1A1A',
