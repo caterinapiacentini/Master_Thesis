@@ -290,5 +290,6 @@ git pull
 
 ## References
 
-- Dangl, T. & Salbrechter, S. (2023). *Measuring Geoeconomic Pressure*. Working Paper.
+- Dangl, T., Halling, M. & Salbrechter, S. (2025). *The Price of Physical Climate Risk Estimated from Public News via Guided Topic Modeling*. October 11, 2025.
+- - Dangl, T. & Salbrechter, S. (2025). *Guided Topic Modeling with Word2Vec: A Technical Note*. First draft, September 19, 2023.
 - Caldara, D. & Iacoviello, M. (2022). *Measuring Geopolitical Risk*. American Economic Review, 112(4), 1194–1225.
