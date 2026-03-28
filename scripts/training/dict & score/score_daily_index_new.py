@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import glob
 import pandas as pd
 import numpy as np
 import argparse
@@ -45,16 +46,18 @@ def main():
 
     for txt_file in text_files:
         # Derive year and corresponding meta filename
-        # Expected format: rtrs_YYYY_clean.txt.gz  or  rtrs_YYYY.txt.gz
-        parts     = txt_file.split('_')
-        year      = parts[1]
-        meta_file = f"rtrs_{year}_meta.jsonl.gz"
-        txt_path  = os.path.join(args.text_dir,  txt_file)
-        meta_path = os.path.join(args.meta_dir, meta_file)
+        # Expected format: rtrs_YYYY_clean.txt.gz  or  rtrs_YYYY_region_...txt.gz
+        parts    = txt_file.split('_')
+        year     = parts[1]
+        txt_path = os.path.join(args.text_dir, txt_file)
 
-        if not os.path.exists(meta_path):
-            print(f"[SKIP] Meta file not found for {txt_file} — expected {meta_file}")
+        # Find the meta file for this year: handles both rtrs_YYYY_meta.jsonl.gz
+        # and rtrs_YYYY_world_meta.jsonl.gz (or any other infix).
+        matches = glob.glob(os.path.join(args.meta_dir, f"rtrs_{year}_*meta.jsonl.gz"))
+        if not matches:
+            print(f"[SKIP] Meta file not found for {txt_file} — expected rtrs_{year}_*meta.jsonl.gz in {args.meta_dir}")
             continue
+        meta_path = matches[0]
 
         print(f"\n[INFO] Processing year: {year}")
         daily_data = []
@@ -66,8 +69,18 @@ def main():
                 for txt_line, meta_line in tqdm(zip(f_txt, f_meta), desc=year):
                     meta_obj = json.loads(meta_line)
 
-                    # Robust date extraction: coerce to datetime, keep YYYY-MM-DD string
-                    raw_date = meta_obj.get('firstCreated', '')[:10]
+                    # Robust date extraction: use versionCreated (the date this specific
+                    # version was published) rather than firstCreated (the original article
+                    # creation date). firstCreated is identical across all subsequent
+                    # updates of the same article, so using it causes all update versions
+                    # to pile up on the original publication date, inflating article counts
+                    # on a few days by hundreds of thousands. Fall back to firstCreated
+                    # only if versionCreated is absent.
+                    raw_date = (
+                        meta_obj.get('versionCreated') or
+                        meta_obj.get('firstCreated') or
+                        ''
+                    )[:10]
                     try:
                         date_str = pd.to_datetime(raw_date).strftime('%Y-%m-%d')
                     except Exception:
@@ -127,15 +140,37 @@ def main():
 
     # ----------------------------------------------------------------
     # 3. Consolidate across years
-    # Keep a pre-gap-fill copy for monthly aggregation (needs true
-    # article counts, not the zeros inserted for gap days)
+    # FIX: re-aggregate after concat to eliminate duplicate dates that
+    # arise when articles in one yearly file have dates spilling into
+    # an adjacent year (e.g. a 1996 file containing a few 1997 dates).
+    # Recompute mean score as a proper weighted average by n_articles
+    # so the daily mean is never distorted by duplicate rows.
     # ----------------------------------------------------------------
-    final_index = (
+    combined = (
         pd.concat(all_daily_results)
         .sort_values('date')
         .reset_index(drop=True)
     )
-    all_daily_results_combined = final_index.copy()   # used for monthly GEP below
+
+    # Weighted-average score across duplicate date rows
+    combined['score_x_n'] = combined['score'] * combined['n_articles']
+
+    final_index = combined.groupby('date').agg(
+        score_x_n      = ('score_x_n',     'sum'),
+        score_volume   = ('score_volume',  'sum'),
+        n_articles     = ('n_articles',    'sum'),
+        n_gep_articles = ('n_gep_articles','sum'),
+    ).reset_index()
+
+    final_index['score'] = (
+        final_index['score_x_n'] / final_index['n_articles'].replace(0, np.nan)
+    )
+    final_index = final_index.drop(columns='score_x_n')
+    final_index = final_index.sort_values('date').reset_index(drop=True)
+
+    # Keep a pre-gap-fill copy for monthly aggregation (needs true
+    # article counts, not the zeros inserted for gap days)
+    all_daily_results_combined = final_index.copy()
 
     # ----------------------------------------------------------------
     # 4. Fill date gaps (weekends, holidays, coverage gaps)

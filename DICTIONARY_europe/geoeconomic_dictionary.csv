@@ -1,0 +1,658 @@
+word,weight,topic_count,topics
+import_duties,0.3899035727049299,4,Embargo; Export Controls; Protectionism; Tariffs
+import_duty,0.32984409344134813,3,Export Controls; Protectionism; Tariffs
+import_tariffs,0.3222233771391455,3,Export Controls; Protectionism; Tariffs
+export_ban,0.2942725518503268,4,Embargo; Export Controls; Protectionism; Tariffs
+impose_tariffs,0.2780970595607097,3,Protectionism; Retaliation; Trade War
+import_tariff,0.2700745887733977,3,Export Controls; Protectionism; Tariffs
+import_restrictions,0.2690537891287482,4,Export Controls; Protectionism; Retaliation; Tariffs
+wto_rules,0.25274174274738176,3,Export Controls; Protectionism; Tariffs
+import_quota,0.2510754832841351,3,Export Controls; Protectionism; Tariffs
+retaliatory_measures,0.25072549076456685,4,Embargo; Protectionism; Retaliation; Tariffs
+retaliatory_tariffs,0.24110266366592728,3,Protectionism; Retaliation; Tariffs
+slap_tariffs,0.24013098697244167,3,Protectionism; Retaliation; Trade War
+sanctions_imposed,0.23630200324332368,3,Embargo; Export Controls; Sanctions
+impose_sanctions,0.22851579738501235,3,Embargo; Retaliation; Sanctions
+export_duties,0.22678052526881565,3,Export Controls; Protectionism; Tariffs
+unilateral_sanctions,0.2260039361751141,3,Embargo; Retaliation; Sanctions
+export_duty,0.22512209514260134,3,Export Controls; Protectionism; Tariffs
+protectionist_measures,0.2237507936300378,3,Protectionism; Retaliation; Trade War
+punitive_tariffs,0.2229871811966405,3,Protectionism; Retaliation; Trade War
+imposition,0.21710781339446664,4,Embargo; Protectionism; Retaliation; Tariffs
+punitive_duties,0.2140396273230325,3,Protectionism; Retaliation; Tariffs
+export_quota,0.2067131565633908,3,Export Controls; Protectionism; Tariffs
+impose_duties,0.2062956277182253,3,Protectionism; Retaliation; Tariffs
+punitive_measures,0.20371461068885952,3,Embargo; Retaliation; Sanctions
+embargo,0.19894823258391686,2,Embargo; Retaliation
+imposing_tariffs,0.19532496100190422,3,Protectionism; Retaliation; Tariffs
+protectionist,0.19229311709583696,2,Protectionism; Retaliation
+retaliation,0.189638161083958,2,Embargo; Retaliation
+smart_sanctions,0.18902120511844236,2,Embargo; Sanctions
+imposing_sanctions,0.1864329870168911,3,Embargo; Retaliation; Sanctions
+import_curbs,0.18614445424881532,3,Export Controls; Protectionism; Tariffs
+tougher_sanctions,0.1858963496629139,3,Embargo; Retaliation; Sanctions
+dumping_duties,0.18484302664336222,3,Export Controls; Protectionism; Tariffs
+retaliate,0.18110540117432886,2,Embargo; Retaliation
+quota,0.1801982209146623,2,Protectionism; Tariffs
+export_subsidies,0.1796010526070343,2,Protectionism; Tariffs
+import_quotas,0.17809323215820477,2,Export Controls; Protectionism
+custom_duties,0.17035924141171663,3,Export Controls; Protectionism; Tariffs
+arms_inspectors,0.16816136298802153,2,Embargo; Sanctions
+impose,0.16592124905931405,2,Embargo; Retaliation
+customs_tariffs,0.16304869364439045,3,Export Controls; Protectionism; Tariffs
+tariff_quotas,0.1602377035841419,3,Export Controls; Protectionism; Tariffs
+impose_punitive,0.15670365694053115,3,Protectionism; Retaliation; Tariffs
+imposed,0.15459034086049955,2,Embargo; Retaliation
+chinese_textile,0.1520871426422977,2,Protectionism; Retaliation
+unilateral,0.14586873550831808,2,Embargo; Retaliation
+retaliatory,0.14461131895115553,2,Embargo; Retaliation
+embargoes,0.14251687935977436,2,Embargo; Sanctions
+washington's,0.14173618198273188,2,Embargo; Retaliation
+arms_inspections,0.14113054594096097,2,Embargo; Sanctions
+trump_administration,0.14095501037955938,2,Embargo; Retaliation
+impose_restrictions,0.13878982415125693,3,Embargo; Export Controls; Tariffs
+refined_sugar,0.1374102615662796,2,Export Controls; Tariffs
+lifting_sanctions,0.136404569886387,2,Embargo; Sanctions
+organization_wto,0.1348235268434816,2,Export Controls; Protectionism
+punitive_action,0.13480805968720783,3,Embargo; Retaliation; Sanctions
+banning,0.13283096971810382,2,Embargo; Retaliation
+competitive_devaluations,0.13197311870405637,2,Protectionism; Trade War
+export_restrictions,0.13167839916471283,2,Export Controls; Tariffs
+invaded_kuwait,0.13120345279458923,2,Embargo; Sanctions
+countervailing_duties,0.13043878539355075,2,Protectionism; Tariffs
+retaliate_against,0.12927598811492275,2,Embargo; Retaliation
+sanctions_regime,0.1291866869898494,2,Embargo; Sanctions
+security_council's,0.12895651533134173,2,Embargo; Sanctions
+antidumping,0.1274328107262997,2,Protectionism; Tariffs
+unilaterally,0.1274308253958934,2,Embargo; Retaliation
+weapons_inspections,0.12722303501009263,2,Embargo; Sanctions
+export_controls,0.12665773093893679,2,Embargo; Export Controls
+military_intervention,0.1263133659429705,2,Embargo; Retaliation
+protectionism,0.125,1,Protectionism
+export_quotas,0.125,1,Export Controls
+trade_war,0.125,1,Trade War
+sanctions,0.125,1,Embargo
+repaying,0.125,1,Financial Coercion
+quota_system,0.1245909928812641,2,Protectionism; Tariffs
+imposing,0.12413541805050873,2,Embargo; Retaliation
+unilateral_action,0.1231889189263166,2,Protectionism; Retaliation
+travel_bans,0.12262791105015414,2,Embargo; Sanctions
+counterproductive,0.11965792049843196,2,Protectionism; Retaliation
+slapped_tariffs,0.11945015448700573,2,Protectionism; Trade War
+escalating_tensions,0.11760119232319705,2,Retaliation; Trade War
+restrict,0.11688896171834742,2,Embargo; Retaliation
+punish,0.1156580934820221,2,Embargo; Retaliation
+uranium_enrichment,0.11358248247203623,1,Sanctions
+tariffs_imposed,0.11261345212919298,2,Protectionism; Tariffs
+nuclear_ambitions,0.11115355360651913,2,Embargo; Sanctions
+cooking_oil,0.10985738376832728,2,Export Controls; Tariffs
+creditor,0.108599230594833,1,Financial Coercion
+unprocessed,0.10834321448751617,2,Export Controls; Tariffs
+exempted,0.10719659239588311,2,Embargo; Tariffs
+owes,0.10716333887816222,1,Financial Coercion
+restricting,0.10705483035108099,2,Embargo; Retaliation
+escalation,0.10679408013905306,1,Retaliation
+minister_sharad,0.10625472933392938,2,Export Controls; Tariffs
+reimpose_sanctions,0.10558999534801516,2,Embargo; Sanctions
+isolate_iran,0.1054002748346847,2,Embargo; Sanctions
+wheat_flour,0.10521104834719057,2,Export Controls; Tariffs
+counter_productive,0.10516098295227744,2,Protectionism; Retaliation
+punitive,0.10497659510184762,2,Embargo; Retaliation
+write_off,0.10422900287364174,1,Financial Coercion
+non_basmati,0.10393381029051843,2,Export Controls; Tariffs
+agricultural_subsidies,0.10380956049605378,2,Protectionism; Tariffs
+nuclear_programme,0.10291263856511101,1,Sanctions
+vegetable_oil,0.10286716239585983,2,Export Controls; Tariffs
+serious_consequences,0.10188489969459566,2,Embargo; Retaliation
+harsher_sanctions,0.1002553480052419,2,Embargo; Sanctions
+embargo_imposed,0.09958707094017033,2,Embargo; Sanctions
+crippling_sanctions,0.09928332073719252,2,Embargo; Sanctions
+commissioner_pascal,0.09910392750908098,2,Protectionism; Tariffs
+duties,0.09865817398362725,1,Tariffs
+quotas,0.09843667163147146,1,Tariffs
+weapons_inspectors,0.09816521654963863,1,Sanctions
+trade_tensions,0.09692977129140835,1,Trade War
+fiscal_cliff,0.09668755650776267,1,Trade War
+jitters,0.09532096283036023,1,Trade War
+repay_debts,0.09513613875360025,1,Financial Coercion
+customs_duties,0.09374307066265704,1,Tariffs
+debts_owed,0.09297640654196589,1,Financial Coercion
+defaulting,0.09289015776949006,1,Financial Coercion
+poultry_imports,0.09174548046337375,2,Export Controls; Tariffs
+organisation_wto,0.09164846101101315,1,Protectionism
+factory_activity,0.09146345209971474,1,Trade War
+flight_ban,0.09074010462417559,2,Embargo; Sanctions
+arms_embargo,0.09073819200801003,1,Embargo
+nickel_ore,0.09060727138157167,1,Export Controls
+customs_duty,0.09050816454954733,1,Tariffs
+protectionist_stance,0.08969811336370748,2,Protectionism; Trade War
+worries,0.08956777867157471,1,Trade War
+security_council,0.08920920915271088,1,Embargo
+iran_sanctions,0.08913609137977684,1,Sanctions
+tarrifs,0.08913401646630703,2,Protectionism; Tariffs
+rogue_states,0.08836974660372456,1,Retaliation
+heavily_indebted,0.08801288848556334,1,Financial Coercion
+globalisation,0.08739982695206047,1,Protectionism
+nuclear_enrichment,0.0856380569455697,1,Sanctions
+repayable,0.08541429642475043,1,Financial Coercion
+surcharge,0.08453120179333759,1,Tariffs
+military_action,0.08422094132922776,1,Retaliation
+economies,0.08399703702019909,1,Trade War
+escalate,0.08346129768114915,1,Retaliation
+largest_economies,0.08345666077915889,1,Trade War
+ious,0.08326090926517041,1,Financial Coercion
+anti_subsidy,0.0822196895899378,1,Protectionism
+washington,0.08183676337583373,1,Retaliation
+sentiment,0.08150485528796815,1,Trade War
+rescheduling,0.08148034421380944,1,Financial Coercion
+rhetoric,0.0807838668602473,1,Protectionism
+confrontation,0.08073664981943311,1,Retaliation
+reschedule,0.080389011498295,1,Financial Coercion
+risk_aversion,0.07965305421647252,1,Trade War
+provocation,0.07956237725148138,1,Retaliation
+imposed_sanctions,0.07952848439262852,1,Embargo
+nuclear_program,0.07950623777690315,1,Sanctions
+trade_frictions,0.07934247805057598,1,Trade War
+risk_appetite,0.07926532477082081,1,Trade War
+sino_trade,0.07850554945888567,1,Trade War
+slowdown,0.0783637008129808,1,Trade War
+government_shutdown,0.07831951797791864,1,Trade War
+trade_spat,0.078088374457484,1,Trade War
+halt_enrichment,0.07745354576924841,1,Sanctions
+threats,0.07740246523961833,1,Retaliation
+nationalism,0.07717062821440071,1,Protectionism
+humanitarian_goods,0.07683577142567433,1,Sanctions
+optimism,0.07644662204567801,1,Trade War
+bridge_financing,0.07633290453185149,1,Financial Coercion
+global_imbalances,0.07628007491670988,1,Trade War
+supply_disruptions,0.07607532360440764,1,Trade War
+subsidy,0.0753625439760317,1,Tariffs
+economic_recovery,0.07525618652009593,1,Trade War
+multilateral_lenders,0.07512863243906737,1,Financial Coercion
+economic_patriotism,0.07488915386036005,1,Protectionism
+low_enriched,0.07482384140487978,1,Sanctions
+highly_indebted,0.07474032473416471,1,Financial Coercion
+trade_friction,0.07460580582189982,1,Trade War
+trade_organisation,0.07458011257178825,1,Protectionism
+gko,0.07433547079265582,1,Financial Coercion
+steel_tariffs,0.07422969958732807,1,Protectionism
+countermeasures,0.07407887134329379,1,Retaliation
+geopolitical_tensions,0.0740389169021974,1,Trade War
+threatened,0.07390905361641965,1,Retaliation
+enrichment_programme,0.07345220205455506,1,Sanctions
+stocks,0.07341746742623306,1,Trade War
+civilian_nuclear,0.07339704535105976,1,Sanctions
+enrich_uranium,0.0732237346510171,1,Sanctions
+escalating,0.07307176255481337,1,Retaliation
+export_curbs,0.07305110714901014,1,Export Controls
+suspend_enrichment,0.07299202644870693,1,Sanctions
+slowing,0.07296993290115635,1,Trade War
+comprehensive_resolution,0.07289175323821344,1,Sanctions
+stop_enriching,0.07235360336263019,1,Sanctions
+provocations,0.07170164560276775,1,Retaliation
+provocative,0.07156387403004234,1,Retaliation
+unfair_competition,0.07137941573603966,1,Protectionism
+ban,0.07128848159500376,1,Embargo
+diplomats,0.07128384532395876,1,Embargo
+protectionist_pressures,0.07121732948925144,1,Trade War
+asian_currencies,0.07107305603807011,1,Trade War
+debtholders,0.07079571725990873,1,Financial Coercion
+china,0.07033117651886862,1,Trade War
+financing_package,0.07000933460510998,1,Financial Coercion
+japan,0.06980871329014227,1,Trade War
+exportable_surplus,0.06969758959807104,1,Export Controls
+fully_repaid,0.06962959084062058,1,Financial Coercion
+iaea_board,0.06962852386965364,1,Sanctions
+commission_unscom,0.06957479806511871,1,Sanctions
+rally,0.0694383423074,1,Trade War
+gkos,0.06897113170121455,1,Financial Coercion
+economic,0.06892260246827282,1,Trade War
+rebound,0.06886964697892116,1,Trade War
+protectionist_policies,0.0687621794137454,1,Protectionism
+western_sanctions,0.06868172435957966,1,Export Controls
+intrusive_inspections,0.06867062302406218,1,Sanctions
+investor_sentiment,0.06848612542099085,1,Trade War
+funding_crunch,0.06839245873706701,1,Financial Coercion
+scrap,0.06825483118702422,1,Tariffs
+nuclear_bomb,0.06817063971883949,1,Sanctions
+record_highs,0.06801470471336761,1,Trade War
+representative_ron,0.06800705740823614,1,Protectionism
+covid_curbs,0.0679240786916497,1,Trade War
+populism,0.06776830556644726,1,Protectionism
+trade_pacts,0.06763201427943055,1,Protectionism
+lift_sanctions,0.06761530112027482,1,Sanctions
+dispute_mechanism,0.0675758403983426,1,Sanctions
+restrictions,0.06752003519250155,1,Embargo
+pretext,0.0674105434752866,1,Retaliation
+slide,0.06720285205366469,1,Trade War
+isolate_russia,0.06719724670598497,1,Retaliation
+undermine,0.06707235701138038,1,Protectionism
+interventionist,0.0670107913131282,1,Protectionism
+trade_wars,0.06699008367331635,1,Trade War
+anti_ballistic,0.06696306126420869,1,Retaliation
+draft_resolution,0.06679559927596693,1,Embargo
+arms_inspection,0.06676291538340423,1,Sanctions
+sanctions_resolutions,0.0667430055790363,1,Sanctions
+fears,0.06672648165791496,1,Trade War
+retaliatory_sanctions,0.06669093797769014,1,Retaliation
+threat,0.06662175317802978,1,Retaliation
+invade,0.06658510134992045,1,Retaliation
+retaliated,0.06646159747773557,1,Retaliation
+disbursing,0.06623480785916494,1,Financial Coercion
+weigh,0.06619432743743806,1,Trade War
+retaliatory_action,0.06613729297812454,1,Retaliation
+iraq's_neighbors,0.06613194322024994,1,Sanctions
+weakness,0.06603124273039329,1,Trade War
+geopolitical_concerns,0.0659878225038689,1,Trade War
+united_states,0.06583266854466753,1,Retaliation
+frozen_assets,0.06575169959808351,1,Financial Coercion
+recapitalize,0.06568067079765538,1,Financial Coercion
+iraq's_ambassador,0.06560724725282563,1,Sanctions
+nationalistic,0.06554152910085136,1,Protectionism
+unilateralism,0.06523610928375241,1,Protectionism
+supply_glut,0.06523413206367937,1,Trade War
+chinese_textiles,0.0649872879947671,1,Protectionism
+sunseed,0.06424773810170438,1,Export Controls
+peaceful_nuclear,0.06419334571449459,1,Sanctions
+exempt,0.06410743151385455,1,Tariffs
+escalated,0.06395547983540625,1,Retaliation
+choppy,0.06389759513769457,1,Trade War
+debt_rescheduling,0.06376679134081359,1,Financial Coercion
+western_powers,0.06367817611646599,1,Embargo
+sunflower,0.06360007195154353,1,Export Controls
+provoke,0.06347992924299586,1,Retaliation
+worries_about,0.06320095533990489,1,Trade War
+euro's_rise,0.0631663969252623,1,Trade War
+decoupling,0.06316425971048927,1,Protectionism
+threatening,0.0631550392615123,1,Retaliation
+firesale,0.06313099212149616,1,Financial Coercion
+blacklist,0.06312839747701197,1,Embargo
+sanctioned,0.06306970954736829,1,Embargo
+export_refunds,0.06304849557485138,1,Export Controls
+dumping,0.06275943401920028,1,Protectionism
+counter_measures,0.06258556804184306,1,Retaliation
+provocative_actions,0.062469842512301914,1,Retaliation
+suspending_sanctions,0.062241731175698964,1,Sanctions
+iraq's_weapons,0.06223764858795974,1,Sanctions
+six_powers,0.062130119000664646,1,Sanctions
+civilian_atomic,0.06194076042933663,1,Sanctions
+military_strike,0.06188426940640977,1,Retaliation
+sensitive_atomic,0.061781039427816695,1,Sanctions
+missiles_fired,0.06168090880135488,1,Retaliation
+greenstock,0.06156887530107508,1,Sanctions
+trade_barriers,0.061562062400741274,1,Protectionism
+geopolitical_risks,0.06147170263321096,1,Trade War
+islamic_republic,0.0614691254246098,1,Embargo
+libyan_suspects,0.06131197323988299,1,Sanctions
+gmo_corn,0.061269281081960184,1,Export Controls
+sunoil,0.06122010316457584,1,Export Controls
+soft_patch,0.06113457765048927,1,Trade War
+weaker,0.06098279264583505,1,Trade War
+imported_steel,0.0609585690915399,1,Protectionism
+undermining,0.06091781693454814,1,Protectionism
+sabre_rattling,0.060842903410552034,1,Retaliation
+overhaul_sanctions,0.060668997736314526,1,Sanctions
+laissez_faire,0.060626013343253835,1,Protectionism
+hard_landing,0.060622543269854036,1,Trade War
+jittery,0.060467200160392996,1,Trade War
+iraq's_closest,0.06039880602182285,1,Sanctions
+resolution_adopted,0.06038385302583423,1,Sanctions
+nervousness,0.06036068177996368,1,Trade War
+slap,0.06026704431438547,1,Retaliation
+pandering,0.06018336509311916,1,Protectionism
+military_confrontation,0.06009442524507895,1,Retaliation
+weak,0.06005597574288078,1,Trade War
+kharrazi,0.05999162133395073,1,Sanctions
+sluggish,0.059815570368013146,1,Trade War
+possible_sanctions,0.0597957999453543,1,Sanctions
+cash_starved,0.05978588722553044,1,Financial Coercion
+powers,0.05924854896108817,1,Embargo
+quarantine_authority,0.05897614569421496,1,Export Controls
+sunflower_seed,0.05885010397230684,1,Export Controls
+brittan,0.0588287993734034,1,Protectionism
+safeguard_measures,0.05881459725831311,1,Tariffs
+wrong_signal,0.05880190129616742,1,Retaliation
+import_permits,0.058751658927738884,1,Export Controls
+persuade_tehran,0.05869819710673906,1,Sanctions
+anglo_saxon,0.05867711121746094,1,Protectionism
+sanctions_relief,0.05851903006508588,1,Embargo
+asian_economies,0.058507592700068334,1,Trade War
+nuclear_standoff,0.05843656734576197,1,Sanctions
+revamp_sanctions,0.05833875534641197,1,Sanctions
+protectionists,0.058328787164344455,1,Protectionism
+revive_nuclear,0.05824144988838559,1,Sanctions
+incursions,0.058240217377077984,1,Retaliation
+iraq_invaded,0.05812153524107764,1,Sanctions
+peaceful_purposes,0.05804074083713285,1,Sanctions
+isolationism,0.05802655980795991,1,Protectionism
+hamdoon,0.058023655897968866,1,Sanctions
+currency_devaluations,0.057984320998504306,1,Trade War
+increasingly_assertive,0.05778457433324606,1,Protectionism
+importation,0.057539035289985094,1,Tariffs
+recapitalisations,0.057520435146988375,1,Financial Coercion
+missile_strikes,0.05748342921398147,1,Retaliation
+rosselkhoznadzor,0.0574825373992293,1,Export Controls
+wto_membership,0.05726075105621082,1,Tariffs
+atomic_programme,0.05715249963306494,1,Sanctions
+wto_complaint,0.05713103009532117,1,Tariffs
+sanction,0.057042034502699186,1,Embargo
+tax_exemption,0.0570113857360572,1,Tariffs
+military_strikes,0.05699969068104598,1,Retaliation
+representative_charlene,0.05693556306928927,1,Protectionism
+western_diplomats,0.05673626975747481,1,Embargo
+baghdad's_troops,0.05673506373095907,1,Sanctions
+protectionist_tendencies,0.05671303538157455,1,Protectionism
+travel_ban,0.05671174302220203,1,Embargo
+hegemony,0.056635831681283465,1,Protectionism
+suspend_uranium,0.0563694678444947,1,Sanctions
+month_lows,0.05631093150880167,1,Trade War
+bluff,0.056255833805128025,1,Retaliation
+cheap_imports,0.05615205670603053,1,Protectionism
+debts_totalling,0.05606642291995433,1,Financial Coercion
+enrichment_work,0.05605935257100185,1,Sanctions
+civilian_purposes,0.05605473517664906,1,Sanctions
+concerns_about,0.056031286387854845,1,Trade War
+veto_wielding,0.05601638108619801,1,Embargo
+council_resolutions,0.05598293951679838,1,Sanctions
+disarmament_demands,0.0559068243994566,1,Sanctions
+arms_experts,0.05577806336814191,1,Sanctions
+restriction,0.055626400495593614,1,Tariffs
+friction,0.0555249679966607,1,Protectionism
+unprocessed_minerals,0.055469639956496675,1,Export Controls
+reneged,0.055469551202674515,1,Financial Coercion
+geopolitical_risk,0.05543569129570052,1,Trade War
+dollar's_fall,0.05540700578522364,1,Trade War
+reiterated_moscow's,0.055328598427302894,1,Retaliation
+targeted_sanctions,0.05530589487566857,1,Sanctions
+ofac,0.05506087152824391,1,Embargo
+escalate_tensions,0.05499427403397093,1,Retaliation
+blacklisted,0.054938152582167374,1,Embargo
+catastrophic_consequences,0.054843477573560034,1,Retaliation
+inspection_regime,0.05483241791915293,1,Sanctions
+diplomats_say,0.054713197214108306,1,Embargo
+cues,0.05461647569056789,1,Trade War
+deflationary_pressures,0.05456276179096872,1,Trade War
+negotiated_solution,0.054420311865527725,1,Sanctions
+atomic_work,0.0544153257842328,1,Sanctions
+immobilized,0.05432517393749427,1,Financial Coercion
+impose_retaliatory,0.05422668560796826,1,Retaliation
+competitive_disadvantage,0.054180378959637135,1,Protectionism
+assertive,0.05415157126885155,1,Protectionism
+uza,0.05410794374549539,1,Export Controls
+lingering_worries,0.054070682253275375,1,Trade War
+dejammet,0.054006069198503565,1,Sanctions
+retaliating,0.05392703627371535,1,Retaliation
+exemptions,0.053883506919245684,1,Embargo
+mykola_vernytsky,0.05368506206529636,1,Export Controls
+visa_ban,0.05367311254271758,1,Embargo
+stop_interfering,0.053530996061714846,1,Retaliation
+tax_rebates,0.05349596165418807,1,Tariffs
+unfreeze,0.053391457147790165,1,Financial Coercion
+distorting,0.053295802721711534,1,Protectionism
+enrichment_activities,0.053258529527580104,1,Sanctions
+freeze,0.05324071333083408,1,Embargo
+urged_restraint,0.0531223602255488,1,Retaliation
+retaliatory_duties,0.05308701833152551,1,Tariffs
+restitute,0.053079542797150596,1,Financial Coercion
+waive_sanctions,0.05296355889446733,1,Sanctions
+debt's,0.05294772974178178,1,Financial Coercion
+interventionism,0.05278644350224262,1,Protectionism
+bailing,0.05270322031454094,1,Financial Coercion
+steel_duties,0.05260830192861284,1,Tariffs
+export_permits,0.052542215806565234,1,Export Controls
+paswan,0.05252397834373609,1,Tariffs
+confrontational,0.0524030777497822,1,Protectionism
+euro's_surge,0.052376280934994614,1,Trade War
+weapons_inspection,0.05236243308806112,1,Sanctions
+dollar's_decline,0.05231339512504199,1,Trade War
+ukraine's_agriculture,0.05227381503757793,1,Export Controls
+sectoral_sanctions,0.05224061256844898,1,Embargo
+lingering_concerns,0.05223427373065164,1,Trade War
+dollar's_strength,0.05220885653873818,1,Trade War
+tepid,0.05209670406666576,1,Trade War
+iran's_refusal,0.0520308575399479,1,Sanctions
+crimp,0.05202940387516231,1,Trade War
+preferences_gsp,0.052007336523982456,1,Tariffs
+efsd,0.05195867265289934,1,Financial Coercion
+mayank_bhardwaj,0.05195123727168244,1,Export Controls
+trade,0.05191603750878522,1,Trade War
+export_licenses,0.05187296178411512,1,Export Controls
+zlochevsky,0.051717455577283376,1,Export Controls
+unpaid_dividends,0.051268536010530316,1,Financial Coercion
+severe_consequences,0.05120726848809687,1,Retaliation
+somo's,0.051096298317948124,1,Sanctions
+edible_oil,0.05105930285575352,1,Export Controls
+dollar's_weakness,0.05101154327494918,1,Trade War
+rebounding,0.051000027085719976,1,Trade War
+dumping_duty,0.050928821110801534,1,Tariffs
+west_suspects,0.05091370616346241,1,Sanctions
+ratcheting,0.050909969562842106,1,Retaliation
+lobbies,0.05073157258424113,1,Protectionism
+asia's_financial,0.050629937142346024,1,Trade War
+gsp,0.05062443503469613,1,Tariffs
+sensitive_sites,0.05050972485629973,1,Sanctions
+domeq,0.05049789762635295,1,Tariffs
+trump's_protectionist,0.050490602786204944,1,Trade War
+unfreezing,0.050357948359987706,1,Financial Coercion
+vernytsky,0.05031570753045257,1,Export Controls
+russia's_exportable,0.05024162294439912,1,Export Controls
+importing_countries,0.0501751273554646,1,Tariffs
+backstopped,0.050137336787915925,1,Financial Coercion
+removing_saddam,0.050125615398238524,1,Sanctions
+ukrainian_maize,0.050118258747914375,1,Export Controls
+russia_defaulted,0.050086751934854214,1,Financial Coercion
+immobilised,0.04997328367516812,1,Financial Coercion
+harming,0.04994058985244808,1,Protectionism
+duties_imposed,0.04991097303096192,1,Tariffs
+lobbying_effort,0.04985327348873752,1,Tariffs
+blacklisting,0.0497123933728511,1,Embargo
+greece_readied,0.04967404951101566,1,Financial Coercion
+iraqi_disarmament,0.04965600293552448,1,Sanctions
+faltering,0.049649094690193164,1,Trade War
+confrontation_between,0.04954889688626895,1,Retaliation
+biodiesel_imports,0.04951625325582696,1,Tariffs
+stronger_dollar,0.049480091177116124,1,Trade War
+overt,0.04932518380949059,1,Protectionism
+arming_rebels,0.049264415872538075,1,Sanctions
+leaded,0.0492170686263289,1,Tariffs
+dampening,0.04917420536720591,1,Trade War
+zero_ergot,0.04907965578146158,1,Export Controls
+makukha,0.04900632931069306,1,Export Controls
+gasc's,0.048867258729344984,1,Export Controls
+denominated_minfin,0.04876141924752836,1,Financial Coercion
+multilaterals,0.04874754267748486,1,Financial Coercion
+nomani,0.04865944968511593,1,Export Controls
+tariff_threats,0.04858930757553732,1,Trade War
+strident,0.04856053223139555,1,Protectionism
+kozachenko,0.048462716579047924,1,Export Controls
+euro's_appreciation,0.048350766708516846,1,Trade War
+send_signal,0.04825020313354981,1,Retaliation
+sanctions_lifted,0.04822041874896862,1,Sanctions
+cpo,0.048173564149434835,1,Export Controls
+baghdad's_invasion,0.048041487421983525,1,Sanctions
+frictions,0.04795144344375748,1,Protectionism
+broken_rice,0.047830477388167,1,Export Controls
+iran_insists,0.0477293546827309,1,Sanctions
+disbursal,0.04771389261302213,1,Financial Coercion
+restructure_debts,0.04765605417983518,1,Financial Coercion
+sizov,0.04750657587066945,1,Export Controls
+russia's_pgm,0.04750284398016569,1,Export Controls
+export_levy,0.047323375719330776,1,Tariffs
+sanctioning,0.04732141507956756,1,Embargo
+losing_momentum,0.04710546518979112,1,Trade War
+viktoria_abramchenko,0.047053026833899884,1,Export Controls
+antagonise,0.04703263868460784,1,Retaliation
+wto_members,0.04695470414777455,1,Tariffs
+supply_constraints,0.046901175337139514,1,Trade War
+hostility_towards,0.04678826562640845,1,Protectionism
+sputtering,0.04678659486252668,1,Trade War
+equal_instalments,0.04674599202757206,1,Financial Coercion
+abide,0.04669310486939672,1,Embargo
+accruing,0.046641266277927224,1,Financial Coercion
+substantial_portion,0.04658239975758861,1,Financial Coercion
+disarming_iraq,0.04654453625130555,1,Sanctions
+quantitative_restrictions,0.04650004329211427,1,Tariffs
+carryover,0.04647337559929213,1,Export Controls
+poultry_meat,0.04632349393570523,1,Tariffs
+enforce,0.04628262713838644,1,Embargo
+reimposed,0.04627195351590105,1,Embargo
+seriously_damage,0.04624559835619727,1,Retaliation
+take_effect,0.04618715857087791,1,Tariffs
+conditions_attached,0.04609605691038851,1,Financial Coercion
+repay_outstanding,0.046078519875877,1,Financial Coercion
+ratchet,0.04605897141537372,1,Retaliation
+nuclear_activities,0.045948009357876095,1,Sanctions
+reimpose,0.04590560091436576,1,Embargo
+resolution_demanding,0.045618343064316676,1,Sanctions
+slowdowns,0.04550587973293601,1,Trade War
+world's_heaviest,0.04483805362618852,1,Financial Coercion
+export_orientated,0.0448180288097972,1,Trade War
+antagonistic,0.04477103771818,1,Protectionism
+argentine_soyoil,0.044743780831033704,1,Export Controls
+visa_restrictions,0.044507396973881994,1,Embargo
+export_levies,0.044453177519836844,1,Tariffs
+supplying_weapons,0.04428857113058372,1,Retaliation
+moscow_denies,0.04425226227011708,1,Embargo
+zubkov,0.04421217479353624,1,Export Controls
+holdix,0.04408184380041744,1,Financial Coercion
+treaty_npt,0.044067442562574013,1,Sanctions
+rapid_appreciation,0.04389988360193828,1,Trade War
+singling_out,0.04387065377032869,1,Protectionism
+recapitalized,0.04379806503526388,1,Financial Coercion
+touchy,0.04378628292543079,1,Protectionism
+feofilov,0.04374035589656275,1,Export Controls
+liberalize,0.04370148267635084,1,Tariffs
+loanbooks,0.043651700370377196,1,Financial Coercion
+value_banknotes,0.043496800106874074,1,Tariffs
+antagonism,0.04342953970064627,1,Protectionism
+partially_revoked,0.04333760303541964,1,Export Controls
+breathing_room,0.04324646022696554,1,Financial Coercion
+sponsoring_terrorism,0.043241697878375056,1,Embargo
+hocked,0.043104628637930145,1,Financial Coercion
+circumvent,0.04299088920648538,1,Embargo
+impose_tougher,0.04298866245580649,1,Retaliation
+sanctioned_entities,0.04296686516144991,1,Embargo
+cess,0.04286029138374908,1,Tariffs
+khotimsky,0.04277099774040624,1,Financial Coercion
+isolate,0.04271593645887187,1,Embargo
+safeguard_tariffs,0.042700171516934136,1,Tariffs
+ukrainian_grain,0.04263907490658807,1,Export Controls
+retaliating_against,0.0424502816950636,1,Retaliation
+prepaying,0.042093051523994694,1,Financial Coercion
+reactionary,0.04189876362058734,1,Protectionism
+scumbag,0.041855846783620636,1,Retaliation
+haydutsky,0.04172136363747074,1,Export Controls
+blacklists,0.04166160120218259,1,Embargo
+recessionary_fears,0.04154121147727931,1,Trade War
+renegotiate_greece's,0.041485709620625484,1,Financial Coercion
+sharp_declines,0.041330695017038725,1,Trade War
+oustanding,0.0412775757659421,1,Financial Coercion
+collaterals,0.041164489691007326,1,Financial Coercion
+considering_imposing,0.041005794979730927,1,Export Controls
+punish_moscow,0.040757518106952086,1,Embargo
+friendly_governments,0.040508956128842255,1,Financial Coercion
+ban_imposed,0.04042572639220431,1,Embargo
+resisting,0.04011496900690942,1,Protectionism
+tarrif,0.04003097030558693,1,Tariffs
+steadying,0.03987559870959895,1,Trade War
+dissaude,0.039745743371806405,1,Retaliation
+adamantly,0.03970289027904408,1,Retaliation
+soluble_coffee,0.03952271176959514,1,Tariffs
+bamalwa,0.03929864017062979,1,Tariffs
+geopolitical_uncertainty,0.039113062733760966,1,Trade War
+laons,0.03901916467150115,1,Financial Coercion
+mir_gmo,0.03901314166742369,1,Export Controls
+import_taxes,0.03871287328735988,1,Tariffs
+western_governments,0.03862519055092048,1,Embargo
+enforcing,0.03822294753403769,1,Embargo
+creditline,0.03821248125146763,1,Financial Coercion
+stricter_controls,0.03806886797743482,1,Export Controls
+circumventing,0.03783699656505256,1,Embargo
+strict_controls,0.037803506397891914,1,Tariffs
+slackening,0.037753894014599956,1,Trade War
+embargos,0.03772919906412419,1,Embargo
+impose_temporary,0.037596729315820074,1,Tariffs
+liablities,0.03734019921954569,1,Financial Coercion
+ikar's,0.036990725919312045,1,Export Controls
+asset_freeze,0.036845210765656694,1,Financial Coercion
+processors_association,0.036768485431413235,1,Tariffs
+sunfloweroil,0.036574825612499105,1,Tariffs
+arms_eba,0.036176992287909965,1,Tariffs
+quota_allocations,0.036109722486152705,1,Export Controls
+spillover_effect,0.03607316893313581,1,Trade War
+ukrainian_exporters,0.035953924214880334,2,Export Controls; Tariffs
+nwsh,0.03561736232681756,1,Financial Coercion
+uneventfully,0.03549149849463314,1,Export Controls
+blanket_ban,0.035409869587075316,1,Embargo
+slack_demand,0.03528484324500755,1,Trade War
+miner_kompania,0.03524982593380224,1,Financial Coercion
+dampening_sentiment,0.0352101569118887,1,Trade War
+lars_bohinen,0.03472390831795314,1,Financial Coercion
+alexei_gordeyev,0.034672432937991854,1,Export Controls
+reimposing,0.03454366014752998,1,Embargo
+importer's,0.034360941690916275,1,Export Controls
+persistent_weakness,0.034356155797049766,1,Trade War
+reimposes,0.034052478403797506,1,Embargo
+reimposition,0.03377818454509891,1,Embargo
+agency_rusada,0.03340213067205425,1,Export Controls
+refined_rapeseed,0.03312590936562624,1,Tariffs
+deferring_payments,0.0329827662499005,1,Financial Coercion
+import_licenses,0.03285383815336101,1,Export Controls
+alexei_alekseenko,0.03257864009131875,1,Export Controls
+minister_volodymyr,0.03252340411778269,1,Export Controls
+ibja,0.03238074587157794,1,Tariffs
+agrentina,0.032257976434306196,1,Financial Coercion
+welthandelsorganisation,0.03200486978656142,1,Tariffs
+hejcl,0.032003462759719534,1,Financial Coercion
+avoid_sovereign,0.03193230483268493,1,Financial Coercion
+exerting_pressure,0.031516444292700785,1,Protectionism
+unindentified,0.031111963240859734,1,Financial Coercion
+instrument_rfi,0.03104967694344507,1,Financial Coercion
+sticken,0.030608504672419913,1,Financial Coercion
+restrictions_imposed,0.029808323118353502,1,Embargo
+gplpf,0.02975728480905548,1,Financial Coercion
+corn_stockpiling,0.029731033464225114,1,Export Controls
+portelcom,0.02967260475045705,1,Financial Coercion
+korolyova,0.02953636464169449,1,Export Controls
+trader_cofco,0.029135066408232737,1,Export Controls
+uame,0.028828874218250602,1,Export Controls
+principal_repaid,0.028727385537668924,1,Financial Coercion
+amortising_loan,0.02826520839208787,1,Financial Coercion
+per_bale,0.02770939203281514,1,Tariffs
+davish,0.027681182099369765,1,Tariffs
+irag,0.027366704611113794,1,Sanctions
+modified_strain,0.02735270221390727,1,Export Controls
+prohibitive_tariffs,0.027064267599644684,1,Export Controls
+refined_palmolein,0.026694118971313914,1,Export Controls
+biochimbank's,0.026506022293533774,1,Financial Coercion
+helic,0.026474840941319154,1,Financial Coercion
+duang,0.02594542534039578,1,Tariffs
+imposing_protective,0.025508233713405593,1,Export Controls
+service_vpss,0.025479606762302046,1,Export Controls
+nonparticipating,0.025076858010417685,1,Financial Coercion
+vangvard,0.025007816978898763,1,Financial Coercion
+monsanto's_gm,0.024550770096014814,1,Tariffs
+vojvodjanska's,0.024344685376408985,1,Financial Coercion
+sukhyar,0.02379376131331135,1,Export Controls
+chiavari's,0.023609487855397668,1,Financial Coercion
+colog,0.023489475388099163,1,Financial Coercion
+martinsons,0.023475858015514068,1,Financial Coercion
+reborrowing,0.023215732377854598,1,Financial Coercion
+trade_embargo,0.02277941797245283,1,Embargo
+grapefruits,0.022727717328626124,1,Tariffs
+embyros,0.022341115230035236,1,Export Controls
+svetlitsky,0.02225317967135021,1,Export Controls
+provoke_downward,0.02135305025458569,1,Export Controls
+fyodorovna,0.02045790649595963,1,Financial Coercion
+parlimanet,0.02017692245372399,1,Financial Coercion
+gazinvest's,0.019716443018040784,1,Financial Coercion
+prorgamme,0.019525628687464047,1,Financial Coercion
+reedem,0.0172331661994897,1,Financial Coercion
+notice_stating,0.01668733331006293,1,Financial Coercion
+imposes_moratorium,0.015373650228001962,1,Financial Coercion
+sunoil_producers,0.015180818757722868,1,Export Controls
+saysnet,0.014502903650988924,1,Financial Coercion
+blns_euros,0.01393413061941432,1,Financial Coercion
+ayment,0.01298425280062757,1,Financial Coercion
+metalsnews,0.010936267460841205,1,Tariffs
+handelsfragen,0.010762344306980774,1,Tariffs
