@@ -250,7 +250,69 @@ monthly_index = all_articles.groupby('month').apply(
 
 ---
 
-## 6. Robustness Check vs. GPR
+## 6. Europe GEP Index — Comparison with US Index
+
+**Script:** `master_thesis/scripts/normalize_monthly_index.py`
+
+A parallel GEP index is constructed from a Europe-filtered Reuters corpus (articles with EU-country subject codes). The two indices are structurally distinct and require careful normalization before comparison.
+
+### Article volume
+| Index | Avg articles/month | Months covered |
+|---|---|---|
+| US (`INDEX_8`) | ~62,000 | 357 |
+| EU (`INDEX_8_europe`) | ~177,000 | 348 |
+
+The EU corpus is ~3× larger, which causes statistical smoothing via the law of large numbers.
+
+### Distribution of GEP_monthly (weighted avg article score)
+| | Mean | Std | CV |
+|---|---|---|---|
+| US | 0.000563 | 0.000146 | **0.260** |
+| EU | 0.000400 | 0.000060 | **0.149** |
+
+The EU index is notably flatter (lower CV). This is **not** purely a scaling artifact — it reflects both the larger article pool and structural differences in the dictionaries (see below).
+
+### Hit rate (n_gep_articles / n_articles)
+| | Mean | CV |
+|---|---|---|
+| US | 0.408 | 0.160 |
+| EU | 0.365 | **0.223** |
+
+Interestingly, the hit rate is *more* volatile in EU than US. The flatness of the raw EU index therefore comes from lower and less variable **article-level scores**, not from fewer articles matching the dictionary.
+
+### Dictionary overlap
+| | US dict | EU dict | Common |
+|---|---|---|---|
+| Total words | 725 | 657 | **195 (27%)** |
+| Unique to each | 530 | 462 | — |
+| Mean weight | 0.0638 | 0.0719 | — |
+
+Only 27% of words overlap. The dictionaries were trained independently on different corpora. Key divergences:
+- **EU dict** has higher weights for import-side terms: `import_duty` (+0.23), `import_restrictions` (+0.20), `imposing_tariffs` (+0.16)
+- **US dict** has higher weights for classic protectionism terms: `protectionist` (+0.09), `trade_barriers` (+0.13), `retaliatory_tariffs` (+0.06)
+
+**Thesis implication:** The two indices measure somewhat different facets of geoeconomic pressure and cannot be compared at the level of raw scores. Mention this as a limitation when interpreting cross-regional results.
+
+### Normalization
+EPU-style normalization is applied (Baker, Bloom & Davis convention):
+
+$$\text{GEP\_norm}_m = \frac{\text{GEP\_monthly}_m}{\overline{\text{GEP\_monthly}}} \times 100$$
+
+Each series normalized **independently** so that the long-run average = 100. The `GEP_norm` and `GEP_norm_mean` columns are added to both `GEP_Monthly_Index.csv` files. After normalization, relative swings and event timing are comparable; absolute levels are not.
+
+```python
+# normalize_monthly_index.py
+mean = statistics.mean([r['GEP_monthly'] for r in rows])
+for r in rows:
+    r['GEP_norm']      = r['GEP_monthly'] / mean * 100.0
+    r['GEP_norm_mean'] = mean   # stored for reproducibility
+```
+
+**Post-normalization CV:** US = 0.260, EU = 0.150 — EU is still ~0.6× flatter, which is a genuine data property (not fixable by normalization alone).
+
+---
+
+## 7. Robustness Check vs. GPR
 
 **Script:** `Master_Thesis/INDEX/index_8/robustness_check_GEP.py`
 
@@ -283,7 +345,7 @@ ax.text(0.01, 0.97, f'Correlation: {corr:.4f}', transform=ax.transAxes)
 
 ---
 
-## Pipeline Summary
+## Pipeline Summary (Updated)
 
 ```
 Reuters RTRS (.gz JSON)
@@ -311,7 +373,13 @@ Reuters RTRS (.gz JSON)
   • Article-weighted monthly aggregation
         │
         ▼
-[6. Robustness / GPR] ───► robustness_check_GEP.png  (r > 0.95)
+[6. EU Index + Normalization] ► GEP_Monthly_Index.csv (+ GEP_norm col)
+  • Europe-filtered corpus (177k art/month vs 62k US)
+  • Only 27% dict overlap → structurally different indices
+  • EPU-style norm: GEP_norm = GEP_monthly / mean × 100
+        │
+        ▼
+[7. Robustness / GPR] ───────► robustness_check_GEP.png  (r > 0.95)
   • Day-weighted vs article-weighted
   • Comparison with Caldara & Iacoviello GPR index
 ```
