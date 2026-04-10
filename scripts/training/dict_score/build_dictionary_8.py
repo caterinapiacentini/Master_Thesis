@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-#### daje roma daje
-
 import os
 import pandas as pd
 import argparse
