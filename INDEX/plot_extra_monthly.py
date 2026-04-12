@@ -76,8 +76,8 @@ def plot_monthly(csv_path, out_path, title):
 
 # ── 1. Robust (min2) ──────────────────────────────────────────────────────────
 plot_monthly(
-    csv_path=os.path.join(BASE, "index_new_final", "GEP_Monthly_Robust_min2.csv"),
-    out_path=os.path.join(BASE, "index_new_final", "GEP_Monthly_Robust_min2.png"),
+    csv_path=os.path.join(BASE, "index_new_final", "MIN2", "GEP_Monthly_Robust_min2.csv"),
+    out_path=os.path.join(BASE, "index_new_final", "MIN2", "GEP_Monthly_Robust_min2.png"),
     title="GEP Monthly Index — Robust min-2 (1996–2025)",
 )
 
