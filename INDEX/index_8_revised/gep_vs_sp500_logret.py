@@ -34,7 +34,8 @@ sp500 = sp500.dropna()
 
 # ── Merge on common months ─────────────────────────────────────────────────────
 df = monthly[['GEP_monthly']].join(sp500[['log_ret']], how='inner')
-df['gep_scaled'] = df['GEP_monthly'] * 10_000   # ×10⁻⁴ for readability
+df['gep_scaled']  = df['GEP_monthly'] * 10_000   # ×10⁻⁴ for readability
+df['cum_log_ret'] = df['log_ret'].cumsum()        # cumulative log return
 
 # ── Key events ────────────────────────────────────────────────────────────────
 events = {
@@ -65,17 +66,31 @@ ax1.legend(fontsize=10, framealpha=0.7, loc='upper left')
 ax1.set_title('GEP Index vs S&P 500 Monthly Log Returns (1996–2025)',
               fontsize=13, pad=10)
 
-# — Bottom panel: S&P 500 log returns ─────────────────────────────────────────
+# — Bottom panel: S&P 500 log returns + cumulative log return ─────────────────
 colors = ['#C0392B' if r < 0 else '#27AE60' for r in df['log_ret']]
 ax2.bar(df.index, df['log_ret'], color=colors, width=20, alpha=0.75,
         label='S&P 500 log return')
 ax2.axhline(0, color='#333333', linewidth=0.7)
-ax2.set_ylabel('Log return', fontsize=10)
+ax2.set_ylabel('Monthly log return', fontsize=10)
 ax2.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1, decimals=0))
 ax2.grid(axis='y', linestyle='--', linewidth=0.5, alpha=0.4)
 ax2.spines['top'].set_visible(False)
 ax2.spines['right'].set_visible(False)
-ax2.legend(fontsize=10, framealpha=0.7, loc='lower left')
+
+# cumulative log return on a separate right axis
+ax2r = ax2.twinx()
+ax2r.plot(df.index, df['cum_log_ret'], color='#555555', linewidth=1.4,
+          linestyle='-', alpha=0.6, label='Cumulative log return', zorder=4)
+ax2r.set_ylabel('Cumulative log return', fontsize=10, color='#555555')
+ax2r.tick_params(axis='y', labelcolor='#555555')
+ax2r.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1, decimals=0))
+ax2r.spines['top'].set_visible(False)
+
+# combined legend for both axes
+handles1, labels1 = ax2.get_legend_handles_labels()
+handles2, labels2 = ax2r.get_legend_handles_labels()
+ax2.legend(handles1 + handles2, labels1 + labels2,
+           fontsize=10, framealpha=0.7, loc='upper left')
 
 # — Shared x-axis ──────────────────────────────────────────────────────────────
 ax2.xaxis.set_major_locator(mdates.YearLocator(2))
