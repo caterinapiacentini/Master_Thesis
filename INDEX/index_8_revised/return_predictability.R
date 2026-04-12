@@ -1,266 +1,283 @@
 #!/usr/bin/env Rscript
 # =============================================================================
-# Return Predictability Regression
-# R_{x,t+h} = α + β_GEP * GEP_t + β_GPR * GPR_t + β'_ctrl * X_t + u_{t+h}
-#
-# h = 0 : contemporaneous  (same-day return)
-# h = 1 : predictive       (next-day return)
-#
-# Y  : S&P 500 daily log returns  (stationary, ~Normal — correct for OLS)
-# X_t: Fama-French 3 Factors (Mkt-RF, SMB, HML) + risk-free rate
-# Standard errors: Newey-West HAC (robust to heteroscedasticity & autocorr.)
+# Return Predictability Regression — MONTHLY
+# z-scored GEP & GPR, multiple subperiods
 # =============================================================================
-
-.libPaths(c("/home/h12429576/R_libs", .libPaths()))
 
 suppressPackageStartupMessages({
   library(dplyr)
-  library(tidyr)
   library(lubridate)
   library(readxl)
   library(quantmod)
   library(frenchdata)
-  library(sandwich)
-  library(lmtest)
-  library(broom)
   library(gt)
 })
 
-BASE <- dirname(normalizePath(sys.frame(1)$ofile, mustWork = FALSE))
-if (!nzchar(BASE) || BASE == ".") BASE <- getwd()
-
-cat("Working directory:", BASE, "\n")
+BASE_GEP <- "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_8_revised"
+BASE_LIT <- "/Users/catepiacentini/Desktop/tesi/literature"
 
 # =============================================================================
-# 1. Load GEP daily index
+# 1. GEP — aggregate daily → monthly
 # =============================================================================
-gep <- read.csv(file.path(BASE, "GEP_Daily_Index.csv"), stringsAsFactors = FALSE)
-gep$date <- as.Date(gep$date)
-# keep trading days with articles; use 'score' (GEP_t^D in the thesis)
-gep <- gep %>%
+gep_daily <- read.csv(file.path(BASE_GEP, "GEP_Daily_Index.csv"),
+                      stringsAsFactors = FALSE)
+gep_daily$date <- as.Date(gep_daily$date)
+
+gep <- gep_daily %>%
   filter(n_articles > 0) %>%
-  select(date, GEP = score) %>%
+  mutate(month = floor_date(date, "month")) %>%
+  group_by(month) %>%
+  summarise(GEP = mean(score, na.rm = TRUE), .groups = "drop") %>%
+  rename(date = month) %>%
   arrange(date)
 
-cat(sprintf("GEP: %d trading days  (%s → %s)\n",
+cat(sprintf("GEP monthly: %d months  (%s → %s)\n",
             nrow(gep), min(gep$date), max(gep$date)))
 
 # =============================================================================
-# 2. Download / load GPR daily index (Caldara & Iacoviello 2022)
+# 2. GPR — monthly file
 # =============================================================================
-gpr_path <- file.path(BASE, "data_gpr_daily_recent.xls")
+gpr_path <- file.path(BASE_LIT, "data_gpr_export.xls")
+gpr_raw  <- read_excel(gpr_path)
 
-if (!file.exists(gpr_path)) {
-  cat("Downloading GPR daily index...\n")
-  url <- "https://www.matteoiacoviello.com/gpr_files/data_gpr_daily_recent.xls"
-  tryCatch(
-    download.file(url, gpr_path, mode = "wb", quiet = TRUE),
-    error = function(e) stop("Could not download GPR file. Download manually from:\n  ", url)
-  )
-}
+# inspect columns to find date and GPR value
+cat("GPR columns:", paste(names(gpr_raw), collapse = ", "), "\n")
 
-gpr_raw <- read_excel(gpr_path)
-# column names vary; find the date column and GPRD
-date_col <- names(gpr_raw)[sapply(gpr_raw, function(x) inherits(x, "Date") || inherits(x, "POSIXct"))][1]
+# find date column
+date_col <- names(gpr_raw)[sapply(gpr_raw, function(x)
+  inherits(x, "Date") || inherits(x, "POSIXct"))][1]
+
+# if date col not auto-detected (sometimes stored as numeric/char), try first col
+if (is.na(date_col)) date_col <- names(gpr_raw)[1]
+
 gpr_raw[[date_col]] <- as.Date(gpr_raw[[date_col]])
+
+# find GPR column — try common names
 gpr <- gpr_raw %>%
   rename(date = all_of(date_col)) %>%
-  filter(!is.na(GPRD)) %>%
-  select(date, GPR = GPRD) %>%
+  mutate(
+    date = floor_date(as.Date(date), "month"),
+    GPR  = as.numeric(GPR)          # ← forza logical → numeric
+  ) %>%
+  filter(!is.na(GPR)) %>%
+  select(date, GPR) %>%
   arrange(date)
 
-cat(sprintf("GPR: %d days  (%s → %s)\n",
+cat(sprintf("GPR monthly: %d months  (%s → %s)\n",
             nrow(gpr), min(gpr$date), max(gpr$date)))
 
+
+
 # =============================================================================
-# 3. Download S&P 500 daily prices → log returns
+# 3. S&P 500 — monthly log returns
 # =============================================================================
-cat("Downloading S&P 500...\n")
-getSymbols("^GSPC", from = "1995-12-29", to = "2025-12-31",
+getSymbols("^GSPC", from = "1995-12-01", to = "2025-12-31",
            auto.assign = TRUE, warnings = FALSE)
+
 sp500 <- data.frame(
-  date    = as.Date(index(GSPC)),
-  close   = as.numeric(Ad(GSPC))   # adjusted close
-)
-sp500 <- sp500 %>%
+  date  = as.Date(index(GSPC)),
+  close = as.numeric(Ad(GSPC))
+) %>%
   arrange(date) %>%
+  mutate(month = floor_date(date, "month")) %>%
+  group_by(month) %>%
+  slice_tail(n = 1) %>%          # last trading day of each month
+  ungroup() %>%
+  arrange(month) %>%
   mutate(log_ret = c(NA, diff(log(close)))) %>%
   filter(!is.na(log_ret)) %>%
-  select(date, log_ret)
+  select(date = month, log_ret)
 
-cat(sprintf("S&P 500: %d trading days  (%s → %s)\n",
+cat(sprintf("S&P 500 monthly: %d months  (%s → %s)\n",
             nrow(sp500), min(sp500$date), max(sp500$date)))
 
 # =============================================================================
-# 4. Download Fama-French 3 Factors (daily)
+# 4. Fama-French 3 Factors — monthly
 # =============================================================================
-cat("Downloading Fama-French 3 factors...\n")
-ff3_raw  <- download_french_data("Fama/French 3 Factors [Daily]")
-ff3_data <- ff3_raw$subsets$data[[1]]
-
-ff3 <- ff3_data %>%
-  mutate(date = as.Date(as.character(date), format = "%Y%m%d")) %>%
+ff3_raw <- download_french_data("Fama/French 3 Factors")
+ff3 <- ff3_raw$subsets$data[[1]] %>%
+  mutate(date = as.Date(paste0(as.character(date), "01"), format = "%Y%m%d")) %>%
+  mutate(date = floor_date(date, "month")) %>%
   rename(MktRF = `Mkt-RF`) %>%
-  mutate(across(c(MktRF, SMB, HML, RF), ~ as.numeric(.) / 100)) %>%  # % → decimal
+  mutate(across(c(MktRF, SMB, HML, RF), ~ as.numeric(.) / 100)) %>%
   select(date, MktRF, SMB, HML, RF) %>%
   filter(!is.na(MktRF))
 
-cat(sprintf("FF3: %d days  (%s → %s)\n",
+cat(sprintf("FF3 monthly: %d months  (%s → %s)\n",
             nrow(ff3), min(ff3$date), max(ff3$date)))
 
 # =============================================================================
-# 5. Merge all series on common trading days
+# 5. Merge + Z-score on full sample
 # =============================================================================
 df <- sp500 %>%
   inner_join(gep,  by = "date") %>%
   inner_join(gpr,  by = "date") %>%
   inner_join(ff3,  by = "date") %>%
   arrange(date) %>%
-  filter(date >= as.Date("1996-01-01"))
+  filter(date >= as.Date("1996-01-01")) %>%
+  mutate(
+    GEP_z         = (GEP - mean(GEP, na.rm = TRUE)) / sd(GEP, na.rm = TRUE),
+    GPR_z         = (GPR - mean(GPR, na.rm = TRUE)) / sd(GPR, na.rm = TRUE),
+    log_ret_lead1 = lead(log_ret, 1)
+  )
 
-cat(sprintf("Merged dataset: %d observations  (%s → %s)\n",
+cat(sprintf("Merged monthly: %d obs  (%s → %s)\n",
             nrow(df), min(df$date), max(df$date)))
 
 # =============================================================================
-# 6. Construct lead return for h = 1
+# 6. Subperiods
 # =============================================================================
-df <- df %>%
-  mutate(log_ret_lead1 = lead(log_ret, 1))
+subperiods <- list(
+  "Full sample (1996–2025)"        = df,
+  "Pre-GFC (1996–2007)"            = df %>% filter(date < as.Date("2008-01-01")),
+  "GFC & aftermath (2008–2011)"    = df %>% filter(date >= as.Date("2008-01-01") &
+                                                    date <= as.Date("2011-12-31")),
+  "Post-GFC (2012–2021)"           = df %>% filter(date >= as.Date("2012-01-01") &
+                                                    date <= as.Date("2021-12-31")),
+  "Russia–Ukraine war (2022–2023)" = df %>% filter(date >= as.Date("2022-02-01") &
+                                                    date <= as.Date("2023-12-01")),
+  "2025 (Liberation Day shock)"    = df %>% filter(date >= as.Date("2025-01-01"))
+)
 
 # =============================================================================
-# 7. Regressions with Newey-West standard errors
-#    h = 0: R_{t}   ~ GEP_t + GPR_t + MktRF_t + SMB_t + HML_t + RF_t
-#    h = 1: R_{t+1} ~ GEP_t + GPR_t + MktRF_t + SMB_t + HML_t + RF_t
+# 7. Regressions
 # =============================================================================
-run_reg <- function(data, h) {
-  if (h == 0) {
-    y_col  <- "log_ret"
-    y_label <- "R[t] (h=0)"
-  } else {
-    y_col  <- "log_ret_lead1"
-    y_label <- "R[t+1] (h=1)"
+run_models <- function(d, h) {
+  y_col <- if (h == 0) "log_ret" else "log_ret_lead1"
+  d     <- d %>% filter(!is.na(.data[[y_col]]) &
+                        !is.na(GEP_z) & !is.na(GPR_z) &
+                        !is.na(MktRF) & !is.na(SMB) & !is.na(HML))
+  
+  if (nrow(d) < 24) {
+    cat(sprintf("  Skipping '%s' h=%d: only %d complete obs\n", y_col, h, nrow(d)))
+    return(NULL)
   }
 
-  d <- data %>% filter(!is.na(.data[[y_col]]))
-  formula_str <- paste(y_col, "~ GEP + GPR + MktRF + SMB + HML + RF")
-  fit <- lm(as.formula(formula_str), data = d)
+  safe_lm <- function(formula, data) {
+    tryCatch(lm(formula, data = data), error = function(e) NULL)
+  }
 
-  # Newey-West HAC: lag = floor(4*(T/100)^(2/9)) — standard rule of thumb
-  T_obs <- nrow(d)
-  nw_lag <- floor(4 * (T_obs / 100)^(2/9))
-  cat(sprintf("\n[h=%d] N=%d  Newey-West lag=%d\n", h, T_obs, nw_lag))
-
-  nw_se  <- NeweyWest(fit, lag = nw_lag, prewhite = FALSE)
-  ct     <- coeftest(fit, vcov = nw_se)
-
-  # Tidy into a data frame
-  res <- as.data.frame(ct)
-  res$term <- rownames(res)
-  rownames(res) <- NULL
-  names(res) <- c("estimate", "std_error", "t_stat", "p_value", "term")
-  res <- res[, c("term", "estimate", "std_error", "t_stat", "p_value")]
-
-  # Pretty term labels
-  res$term <- recode(res$term,
-    "(Intercept)" = "Intercept",
-    "GEP"         = "GEP (β_GEP)",
-    "GPR"         = "GPR (β_GPR)",
-    "MktRF"       = "Mkt-RF",
-    "SMB"         = "SMB",
-    "HML"         = "HML",
-    "RF"          = "Risk-Free Rate"
+  list(
+    m1 = safe_lm(as.formula(paste(y_col, "~ GEP_z")),                              d),
+    m2 = safe_lm(as.formula(paste(y_col, "~ GEP_z + GPR_z")),                      d),
+    m3 = safe_lm(as.formula(paste(y_col, "~ GEP_z + GPR_z + MktRF + SMB + HML")), d),
+    n  = nrow(d),
+    h  = h
   )
-
-  # Significance stars
-  res$stars <- case_when(
-    res$p_value < 0.001 ~ "***",
-    res$p_value < 0.01  ~ "**",
-    res$p_value < 0.05  ~ "*",
-    res$p_value < 0.10  ~ ".",
-    TRUE                ~ ""
-  )
-
-  list(fit = fit, coeftest = ct, tidy = res,
-       r2 = summary(fit)$r.squared,
-       adj_r2 = summary(fit)$adj.r.squared,
-       n = T_obs, h = h)
 }
 
-reg_h0 <- run_reg(df, h = 0)
-reg_h1 <- run_reg(df, h = 1)
+all_results <- list()
+for (period_name in names(subperiods)) {
+  for (h in c(0, 1)) {
+    key <- paste0(period_name, " | h=", h)
+    all_results[[key]] <- run_models(subperiods[[period_name]], h)
+  }
+}
 
 # =============================================================================
-# 8. Print plain-text summaries
+# 8. Helpers
 # =============================================================================
-cat("\n", strrep("=", 70), "\n")
-cat("REGRESSION h=0 (contemporaneous)  — Newey-West HAC SEs\n")
-cat(strrep("=", 70), "\n")
-print(reg_h0$coeftest)
-cat(sprintf("R²=%.4f   Adj. R²=%.4f   N=%d\n",
-            reg_h0$r2, reg_h0$adj_r2, reg_h0$n))
+extract_coef <- function(models, var) {
+  out <- character(3)
+  for (i in 1:3) {
+    mn <- paste0("m", i)
+    if (is.null(models[[mn]])) { out[i] <- "—"; next }
+    cf <- summary(models[[mn]])$coefficients
+    if (!var %in% rownames(cf)) { out[i] <- "—"; next }
+    est   <- cf[var, "Estimate"]
+    pv    <- cf[var, "Pr(>|t|)"]
+    stars <- ifelse(pv < 0.001, "***", ifelse(pv < 0.01, "**",
+              ifelse(pv < 0.05, "*",   ifelse(pv < 0.10, ".", ""))))
+    out[i] <- sprintf("%.4f%s", est, stars)
+  }
+  out
+}
 
-cat("\n", strrep("=", 70), "\n")
-cat("REGRESSION h=1 (next-day prediction) — Newey-West HAC SEs\n")
-cat(strrep("=", 70), "\n")
-print(reg_h1$coeftest)
-cat(sprintf("R²=%.4f   Adj. R²=%.4f   N=%d\n",
-            reg_h1$r2, reg_h1$adj_r2, reg_h1$n))
+extract_r2 <- function(models) {
+  sapply(1:3, function(i) {
+    mn <- paste0("m", i)
+    if (is.null(models[[mn]])) return("—")
+    sprintf("%.4f", summary(models[[mn]])$r.squared)
+  })
+}
 
 # =============================================================================
 # 9. GT tables
 # =============================================================================
-make_gt <- function(reg, h_label) {
-  footer <- sprintf(
-    "N = %d  |  R² = %.4f  |  Adj. R² = %.4f  |  Newey-West HAC standard errors",
-    reg$n, reg$r2, reg$adj_r2
-  )
+vars_display <- c("GEP_z", "GPR_z", "MktRF", "SMB", "HML", "(Intercept)")
+var_labels   <- c("GEP (z)", "GPR (z)", "Mkt-RF", "SMB", "HML", "Intercept")
 
-  reg$tidy %>%
+for (h in c(0, 1)) {
+  h_label <- if (h == 0) "h = 0  (contemporaneous)" else "h = 1  (next-month prediction)"
+
+  tbl_rows <- list()
+
+  for (period_name in names(subperiods)) {
+    key    <- paste0(period_name, " | h=", h)
+    models <- all_results[[key]]
+    n_obs  <- if (is.null(models)) 0 else models$n
+
+    tbl_rows[[paste0(period_name, "_header")]] <- data.frame(
+      Variable  = paste0("── ", period_name, "  (N=", n_obs, " months)"),
+      `(1) GEP` = "", `(2)+GPR` = "", `(3)+FF3` = "",
+      check.names = FALSE
+    )
+
+    for (vi in seq_along(vars_display)) {
+      v   <- vars_display[vi]
+      row <- extract_coef(models, v)
+      tbl_rows[[paste0(period_name, "_", v)]] <- data.frame(
+        Variable  = paste0("   ", var_labels[vi]),
+        `(1) GEP` = row[1], `(2)+GPR` = row[2], `(3)+FF3` = row[3],
+        check.names = FALSE
+      )
+    }
+
+    r2 <- extract_r2(models)
+    tbl_rows[[paste0(period_name, "_R2")]] <- data.frame(
+      Variable  = "   R²",
+      `(1) GEP` = r2[1], `(2)+GPR` = r2[2], `(3)+FF3` = r2[3],
+      check.names = FALSE
+    )
+  }
+
+  tbl <- do.call(rbind, tbl_rows)
+  rownames(tbl) <- NULL
+
+  gt_tbl <- tbl %>%
     gt() %>%
     tab_header(
-      title    = md(paste0("**Return Predictability Regression (", h_label, ")**")),
-      subtitle = md("*R\\_{x,t+h} = α + β\\_{GEP} GEP\\_t + β\\_{GPR} GPR\\_t + β'X\\_t + u\\_{t+h}*")
+      title    = md(paste0("**Return Predictability — Monthly — ", h_label, "**")),
+      subtitle = md("*GEP aggregated as monthly mean. GEP and GPR z-scored on full sample. OLS, plain SEs.*")
     ) %>%
     cols_label(
-      term      = "Variable",
-      estimate  = "Coef.",
-      std_error = "Std. Error",
-      t_stat    = "t-stat",
-      p_value   = "p-value",
-      stars     = ""
-    ) %>%
-    fmt_number(columns = c(estimate, std_error, t_stat), decimals = 6) %>%
-    fmt_number(columns = p_value, decimals = 4) %>%
-    tab_style(
-      style = cell_text(weight = "bold"),
-      locations = cells_body(
-        rows = term %in% c("GEP (β_GEP)", "GPR (β_GPR)")
-      )
+      Variable  = "Variable",
+      `(1) GEP` = "(1) GEP only",
+      `(2)+GPR` = "(2) + GPR",
+      `(3)+FF3` = "(3) + FF3"
     ) %>%
     tab_style(
-      style = cell_fill(color = "#F0F7FF"),
-      locations = cells_body(
-        rows = term %in% c("GEP (β_GEP)", "GPR (β_GPR)")
-      )
+      style     = cell_text(weight = "bold", color = "#1A3A5C"),
+      locations = cells_body(rows = startsWith(Variable, "──"))
     ) %>%
-    tab_source_note(source_note = footer) %>%
-    tab_source_note(
-      source_note = "Significance: *** p<0.001  ** p<0.01  * p<0.05  . p<0.10"
+    tab_style(
+      style     = cell_fill(color = "#EAF2FB"),
+      locations = cells_body(rows = startsWith(Variable, "──"))
     ) %>%
+    tab_style(
+      style     = cell_fill(color = "#F0F7FF"),
+      locations = cells_body(rows = trimws(Variable) == "GEP (z)")
+    ) %>%
+    tab_style(
+      style     = cell_fill(color = "#F5F5F5"),
+      locations = cells_body(rows = trimws(Variable) == "R²")
+    ) %>%
+    tab_source_note("Significance: *** p<0.001  ** p<0.01  * p<0.05  . p<0.10") %>%
     tab_options(
-      table.font.size       = px(13),
-      heading.title.font.size = px(15),
-      column_labels.font.weight = "bold"
+      table.font.size           = px(12),
+      column_labels.font.weight = "bold",
+      data_row.padding          = px(3)
     )
+
+  print(gt_tbl)
 }
-
-gt_h0 <- make_gt(reg_h0, "h = 0, contemporaneous")
-gt_h1 <- make_gt(reg_h1, "h = 1, next-day prediction")
-
-# Save as HTML
-out_h0 <- file.path(BASE, "regression_h0.html")
-out_h1 <- file.path(BASE, "regression_h1.html")
-gtsave(gt_h0, out_h0)
-gtsave(gt_h1, out_h1)
-cat(sprintf("\nSaved: %s\n", out_h0))
-cat(sprintf("Saved: %s\n", out_h1))
