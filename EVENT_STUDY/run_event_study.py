@@ -23,10 +23,13 @@ import argparse
 import os
 import sys
 
+import io
+import zipfile
+
 import numpy as np
 import pandas as pd
+import requests
 import yfinance as yf
-import pandas_datareader.data as web
 
 # local imports
 sys.path.insert(0, os.path.dirname(__file__))
@@ -53,15 +56,39 @@ def load_sp500(start: str = "1993-01-01", end: str = "2025-12-31") -> pd.Series:
 
 
 def load_ff3(start: str = "1993-01-01", end: str = "2025-12-31") -> pd.DataFrame:
-    """Download Fama-French 3 daily factors via pandas_datareader."""
+    """Download Fama-French 3 daily factors directly from Ken French's website."""
     print("[INFO] Downloading Fama-French 3 daily factors...")
-    ff3_raw = web.DataReader(
-        "F-F_Research_Data_Factors_daily", "famafrench",
-        start=start, end=end
-    )[0]
+    url = ("https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/"
+           "F-F_Research_Data_Factors_daily_CSV.zip")
+    resp = requests.get(url, timeout=60)
+    resp.raise_for_status()
+
+    with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
+        csv_name = [n for n in zf.namelist() if n.lower().endswith(".csv")][0]
+        raw_text = zf.read(csv_name).decode("utf-8", errors="replace")
+
+    # The CSV has several header lines before the data; find the first data line
+    lines = raw_text.splitlines()
+    start_line = next(i for i, l in enumerate(lines) if l.strip().startswith("19"))
+    # Find the end: blank line or "Annual Factors" section
+    end_line = len(lines)
+    for i in range(start_line, len(lines)):
+        if lines[i].strip() == "" or "Annual" in lines[i]:
+            end_line = i
+            break
+
+    data_text = "\n".join(lines[start_line:end_line])
+    ff3_raw = pd.read_csv(
+        io.StringIO(data_text),
+        header=None,
+        names=["Date", "MktRF", "SMB", "HML", "RF"],
+    )
+    ff3_raw["Date"] = pd.to_datetime(ff3_raw["Date"].astype(str), format="%Y%m%d")
+    ff3_raw = ff3_raw.set_index("Date")
     # factors come in %; convert to decimals
-    ff3 = ff3_raw.rename(columns={"Mkt-RF": "MktRF"}) / 100.0
-    ff3.index = pd.to_datetime(ff3.index)
+    ff3 = ff3_raw / 100.0
+    # filter to requested range
+    ff3 = ff3.loc[start:end]
     print(f"       {len(ff3)} days  ({ff3.index[0].date()} → "
           f"{ff3.index[-1].date()})")
     return ff3
