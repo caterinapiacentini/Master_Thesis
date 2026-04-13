@@ -10,6 +10,7 @@
 \definecolor{LightBlue}{RGB}{55,138,221}
 \definecolor{DarkBlue}{RGB}{21,47,95}
 \definecolor{AccentOrange}{RGB}{224,92,42}
+\definecolor{AccentGreen}{RGB}{40,150,80}
 
 \setbeamercolor{palette primary}{bg=WUBlue,fg=white}
 \setbeamercolor{palette secondary}{bg=WUBlue!80,fg=white}
@@ -42,9 +43,9 @@
 % ─────────────────────────────────────────────
 %  Title page
 % ─────────────────────────────────────────────
-\title[GEP Index — Interim Results]%
+\title[GEP Index — Final Results]%
       {\textbf{Geoeconomic Pressure Index}\\[4pt]
-       \large Interim Results: Construction, Revision \& Extension to Europe}
+       \large Final Results: GTM-6 Construction, MIN2 Index \& Return Predictability}
 \author[Caterina Piacentini]{Caterina Piacentini}
 \institute[WU Vienna]{Vienna University of Economics and Business\\
            \smallskip\small Thesis Advisor: Dangl \& Salbrechter methodology}
@@ -64,556 +65,510 @@
 \end{frame}
 
 % ════════════════════════════════════════════════════════
-\section{Index 8 — Baseline Construction}
+\section{GTM-6 — Final Topic Model}
 % ════════════════════════════════════════════════════════
 
-% ─── Slide: what is index_8 ──────────────────
-\begin{frame}{GTM-8 Baseline: Eight Geoeconomic Sub-topics}
+\begin{frame}{GTM-6: Six Geoeconomic Sub-topics (New Final)}
 
-The \textbf{Guided Topic Model (GTM-8)} expands eight seed clusters
+The \textbf{Guided Topic Model (GTM-6)} expands six seed clusters
 in a 64-dimensional Word2Vec embedding space trained on
 30 years of Reuters newswire (1996--2025).
 
 \medskip
 \begin{columns}[T]
-\column{0.48\textwidth}
-\begin{block}{Sub-topics (8)}
+\column{0.52\textwidth}
+\begin{block}{Sub-topics (6) — new final}
 \begin{enumerate}\small
   \item Sanctions
-  \item Trade War
+  \item \textbf{Trade Coercion} \textcolor{AccentOrange}{(new)}
   \item Export Controls
-  \item Tariffs
   \item Financial Coercion
   \item Retaliation
-  \item Protectionism
   \item Embargo
 \end{enumerate}
 \end{block}
 
-\column{0.48\textwidth}
+\column{0.44\textwidth}
 \begin{block}{Key parameters}
 \begin{itemize}\small
   \item Cluster size: 100 words each
   \item Gravity: 1.5
   \item $\alpha_\text{max}$: 2.0 rad
   \item FAISS $k$-NN: 5\,000 candidates
-  \item Final dictionary: \textbf{493 words}
 \end{itemize}
 \end{block}
 \end{columns}
 
+\bigskip
+\begin{alertblock}{Consolidation from 8 to 6 topics}
+  Trade War, Tariffs, and Protectionism cluster tightly in embedding space
+  $\to$ merged into \textbf{Trade Coercion}.
+  Eliminates topic fragmentation; improves semantic coherence.
+\end{alertblock}
+
 \end{frame}
 
-% ─── Slide: seeds table index_8 ──────────────
-\begin{frame}{Index 8 — Seed Words per Sub-topic}
+% ─── Seed words table ────────────────────────
+\begin{frame}{GTM-6 — Seed Words per Sub-topic}
 
 \begin{center}
 \footnotesize
-\renewcommand{\arraystretch}{1.2}
+\renewcommand{\arraystretch}{1.25}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}llll@{}}
 \toprule
-\textbf{Sub-topic} & \textbf{Positive seeds} & \textbf{Negative seeds} \\
+\textbf{Sub-topic} & \textbf{Positive seeds} & \textbf{Negative seeds} & \textbf{Design note} \\
 \midrule
 \rowcolor{WUBlue!10}
 Sanctions
-  & \texttt{economic\_sanctions}, \texttt{sanctions\_regime}
-  & \texttt{sanctions\_relief}, \texttt{sanctions\_waiver} \\
-Trade War
-  & \texttt{trade\_war}, \texttt{trade\_conflict}
-  & \texttt{trade\_deal}, \texttt{trade\_pact} \\
+  & \texttt{economic\_sanctions}, \texttt{targeted\_sanctions}
+  & \texttt{sanctions\_relief}, \texttt{sanctions\_waiver}
+  & Coercive intent \\
+Trade Coercion
+  & \texttt{trade\_war}, \texttt{retaliatory\_tariffs}
+  & \texttt{trade\_deal}, \texttt{trade\_pact}
+  & Merges Trade War + Tariffs + Protectionism \\
 \rowcolor{WUBlue!10}
 Export Controls
-  & \texttt{export\_ban}, \texttt{export\_restriction}
-  & \texttt{export\_license} \\
-Tariffs
-  & \texttt{import\_tariff}, \texttt{customs\_duty}
-  & \texttt{free\_trade}, \texttt{tariff\_exemption} \\
-\rowcolor{WUBlue!10}
+  & \texttt{export\_ban}, \texttt{entity\_list}
+  & \texttt{export\_license}, \texttt{export\_licenses}
+  & Captures US BIS Entity List / chip controls \\
 Financial Coercion
-  & \texttt{asset\_freeze}, \texttt{frozen\_assets}
-  & \texttt{debt\_relief} \\
-Retaliation
-  & \texttt{retaliation}, \texttt{retaliatory\_measures}
-  & \texttt{concessions}, \texttt{goodwill\_gesture} \\
+  & \texttt{asset\_freeze}, \texttt{secondary\_sanctions}
+  & \texttt{debt\_relief}
+  & Sovereign-level financial weapons \\
 \rowcolor{WUBlue!10}
-Protectionism
-  & \texttt{protectionism}, \texttt{import\_quota}
-  & \texttt{trade\_liberalization} \\
+Retaliation
+  & \texttt{retaliation}, \texttt{countermeasures}
+  & \texttt{concessions}, \texttt{goodwill\_gesture}
+  & Escalation \& counter-escalation \\
 Embargo
   & \texttt{trade\_embargo}, \texttt{oil\_embargo}
-  & \texttt{lift\_embargo} \\
+  & \texttt{lift\_embargo}, \texttt{lifting\_sanctions}
+  & Added \texttt{lifting\_sanctions} as negative \\
 \bottomrule
 \end{tabular}}
 \end{center}
 
-\vspace{2pt}
-\footnotesize
+\vspace{4pt}\footnotesize
 Positive seeds \emph{anchor} the subspace; negative seeds act as
-\emph{repellors}, pushing the expansion away from resolution/relief language.
+\emph{repellors}, pushing expansion away from resolution/relief language.
 
 \end{frame}
 
-% ═══════════════════════════════════════════════════════
-\section{Why We Revised Index 8}
-% ═══════════════════════════════════════════════════════
+% ─── Dictionary aggregation ──────────────────
+\begin{frame}{Dictionary Construction — Aggregation Mechanism}
 
-\begin{frame}{Motivation for Revision}
-
-Inspection of the baseline index revealed three issues:
-
-\medskip
-\begin{enumerate}
-  \item \textbf{Weak positive seeds in key topics.}\\
-        \emph{Sanctions:} \texttt{economic\_sanctions} is broad; it matched
-        \emph{relief} contexts (debt relief, sanctions waiver) because the
-        positive subspace captured generic ``sanctions'' rather than
-        \emph{coercive} sanctions.\\[4pt]
-        \emph{Financial Coercion:} \texttt{asset\_freeze} pointed to generic
-        freezing (court orders, estate law) — not sovereign-level financial
-        weaponisation.
-
-  \medskip
-  \item \textbf{Export Controls under-specified.}\\
-        \texttt{export\_ban} pulled semiconductor-agnostic words;
-        the modern strategic-technology dimension (entity lists, chip controls)
-        was not captured.
-
-  \medskip
-  \item \textbf{Protectionism seeds too narrow.}\\
-        \texttt{import\_quota} biased the topic toward quota-specific WTO
-        language; the broader economic nationalism framing was missed.
-\end{enumerate}
-
-\end{frame}
-
-% ─── Revised seeds ───────────────────────────
-\begin{frame}{Index 8 Revised — Updated Seed Words}
-
-\begin{center}
-\footnotesize
-\renewcommand{\arraystretch}{1.2}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{@{}p{3.0cm}p{4.8cm}p{5.0cm}@{}}
-\toprule
-\textbf{Sub-topic} & \textbf{Positive seeds (revised)} & \textbf{Change vs.\ baseline} \\
-\midrule
-\rowcolor{WUBlue!10}
-Sanctions
-  & \texttt{sectoral\_sanctions}, \texttt{targeted\_sanctions}
-  & More specific — coercive intent \\
-Trade War
-  & \texttt{trade\_war}, \texttt{trade\_frictions}
-  & \texttt{trade\_conflict}$\to$\texttt{trade\_frictions};
-    \texttt{financial\_markets} to negatives \\
-\rowcolor{WUBlue!10}
-Export Controls
-  & \texttt{entity\_list}, \texttt{export\_controls}
-  & Captures US BIS / chip controls \\
-Tariffs
-  & \textit{unchanged}
-  & --- \\
-\rowcolor{WUBlue!10}
-Financial Coercion
-  & \texttt{frozen\_russian}, \texttt{payment\_freeze}
-  & Sovereign-level; \texttt{debt\_restructuring} to negatives \\
-Retaliation
-  & \textit{unchanged}
-  & --- \\
-\rowcolor{WUBlue!10}
-Protectionism
-  & \texttt{protectionism}, \texttt{economic\_nationalism}
-  & \texttt{import\_quota}$\to$\texttt{economic\_nationalism} \\
-Embargo
-  & \textit{unchanged}
-  & --- \\
-\bottomrule
-\end{tabular}}
-\end{center}
-
-\end{frame}
-
-% ═══════════════════════════════════════════════════════
-\section{Word Clouds — Aggregated Topics}
-% ═══════════════════════════════════════════════════════
-
-\begin{frame}{Dictionary Aggregation Mechanism}
-
-Each sub-topic produces a ranked word list with \emph{projection norms}
-as importance weights. The global dictionary is built in two steps
-(Dangl \& Salbrechter, Eq.~10):
+Each sub-topic produces 100 words ranked by \emph{projection norm} onto
+the topic subspace. The global dictionary is built in two steps
+(Dangl \& Salbrechter 2023, Eq.~10):
 
 \medskip
 \textbf{Step 1 — Local normalisation (per topic $q$):}
 \[
-  \tilde{w}_{q,j} = \frac{w_{q,j}}{\max_j\, w_{q,j}}
-  \;\in\; [0,1]
+  \tilde{w}_{q,j} = \frac{w_{q,j}}{\max_j\, w_{q,j}} \;\in\; [0,1]
 \]
 
-\textbf{Step 2 — Global average (across $Q=8$ topics):}
+\textbf{Step 2 — Global average (across $Q=6$ topics):}
 \[
   \bar{w}_j = \frac{1}{Q}\sum_{q=1}^{Q} \tilde{w}_{q,j}
 \]
 
 \medskip
 Words appearing in \emph{multiple} sub-topics receive proportionally
-higher global weights — they are semantically central across
-the geoeconomic pressure space.
+higher global weights, reflecting cross-dimensional geoeconomic relevance.
 
 \medskip
-\begin{block}{Result}
-  \textbf{493-word dictionary} (US baseline). Top words:
-  \texttt{protectionist} (0.409), \texttt{import\_tariffs} (0.365),
-  \texttt{impose\_tariffs} (0.340), \texttt{retaliatory\_tariffs} (0.335),
-  \texttt{trade\_war} (0.299).
+\begin{block}{Final dictionary (new final, $Q=6$)}
+  6 sub-topics $\times$ 100 words each.
+  Top entries span all sub-dimensions:
+  \texttt{trade\_war}, \texttt{retaliatory\_tariffs}, \texttt{sanctions},
+  \texttt{entity\_list}, \texttt{retaliation}, \texttt{embargo}\ldots
 \end{block}
 
 \end{frame}
 
-% ─── Combined word-cloud grid ─────────────────
-\begin{frame}{Word Clouds — All 8 Sub-topics (US Baseline)}
+% ─── Word clouds ────────────────────────────
+\begin{frame}{Word Clouds — All 6 Sub-topics (New Final)}
   \begin{center}
-    \includegraphics[width=0.85\textwidth]%
-      {GTM_different_versions/GTM8_results/Combined_Geoeconomic_Pressure_Grid_8.png}
+    \includegraphics[width=0.88\textwidth]%
+      {GTM_different_versions/GTM_new_final_results/Combined_GEP_Grid_6.png}
   \end{center}
 \end{frame}
 
-% ─── Revised combined grid ────────────────────
-\begin{frame}{Word Clouds — All 8 Sub-topics (Revised)}
-  \begin{center}
-    \includegraphics[width=0.85\textwidth]%
-      {GTM_different_versions/GTM8_revised_results/Combined_Geoeconomic_Pressure_Grid_8.png}
-  \end{center}
+% ════════════════════════════════════════════════════════
+\section{MIN2 Index — Construction}
+% ════════════════════════════════════════════════════════
+
+\begin{frame}{GEP Index — From Scoring to Threshold Classification}
+
+\textbf{Key innovation:} the final index uses a \emph{threshold-based}
+classification instead of continuous article scoring.
+
+\medskip
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{block}{Old approach (score-based)}
+\small
+Per-article score:
+\[
+  s_i = \frac{\sum_w \min(\text{cnt}_w,\,4)\cdot T(w)}{N_i}
+\]
+GEP$_m$ = article-weighted mean of $s_i$.
+
+\smallskip
+Problems:
+\begin{itemize}
+  \item Scale $\sim 10^{-4}$ (uninterpretable)
+  \item \textbf{Non-stationary in levels}\\
+        $\Rightarrow$ must use $\Delta$GEP
+  \item Sensitive to single high-freq word
+\end{itemize}
+\end{block}
+
+\column{0.48\textwidth}
+\begin{block}{New approach — MIN-$K$ threshold}
+\small
+Article is a GEP article if it matches $\geq K$ dictionary keywords.
+\[
+  \text{GEP}_m = \frac{n_{\text{GEP articles},\,m}}{n_{\text{articles},\,m}}
+\]
+
+Properties:
+\begin{itemize}
+  \item Proportion in $[0,1]$ — share of news devoted to geoeconomic pressure
+  \item \textcolor{AccentGreen}{\textbf{Stationary in levels}} (ADF confirmed)
+  \item Co-occurrence requirement filters noise
+  \item Can use GEP$_z$ \emph{levels} as regressor
+\end{itemize}
+\end{block}
+\end{columns}
+
 \end{frame}
 
-% ═══════════════════════════════════════════════════════
-\section{GEP Index Results — Revised}
-% ═══════════════════════════════════════════════════════
+% ─── MIN-K variants ──────────────────────────
+\begin{frame}{MIN-K Robustness Variants — Choosing MIN2 as Final}
 
-\begin{frame}{GEP Monthly Index — Revised (1996–2025)}
+\begin{center}
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}clll@{}}
+\toprule
+\textbf{Variant} & \textbf{Threshold $K$} & \textbf{Interpretation} & \textbf{Status} \\
+\midrule
+\rowcolor{WUBlue!5}
+MIN1 & $\geq 1$ keyword & Any mention of a GEP word & Robustness \\
+\rowcolor{WUBlue!20}
+\textbf{MIN2} & $\boldsymbol{\geq 2}$ \textbf{keywords} & \textbf{Co-occurrence required} & \textbf{FINAL} \\
+\rowcolor{WUBlue!5}
+MIN3 & $\geq 3$ keywords & Substantially GEP-focused article & Robustness \\
+MIN4 & $\geq 4$ keywords & Most conservative & Robustness \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\bigskip
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{block}{Why MIN2?}
+\begin{itemize}\small
+  \item MIN1 is noisy — a single word (e.g., \texttt{tariff}) can
+        appear incidentally in unrelated stories
+  \item MIN2 requires \emph{co-occurrence} — the article must
+        discuss geoeconomic pressure substantively
+  \item MIN3/MIN4 are too conservative, losing relevant episodes
+\end{itemize}
+\end{block}
+
+\column{0.48\textwidth}
+\begin{block}{Key MIN2 peaks (GEP\_monthly)}
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Event} & \textbf{GEP} \\
+\midrule
+9/11 (2001-09) & 0.129 \\
+Iraq War (2003-02) & 0.122 \\
+US--China tariffs (2018-05) & 0.107 \\
+Ukraine invasion (2022-03) & 0.139 \\
+Liberation Day (2025-04) & \textbf{0.197} \\
+\bottomrule
+\end{tabular}
+\end{block}
+\end{columns}
+
+\end{frame}
+
+% ════════════════════════════════════════════════════════
+\section{Index Plots \& Validation}
+% ════════════════════════════════════════════════════════
+
+\begin{frame}{MIN2 GEP Index — Monthly (1996–2025)}
   \begin{center}
     \includegraphics[width=0.95\textwidth]%
-      {INDEX/index_8_revised/GEP_Monthly_Index_Revised.png}
+      {INDEX/index_new_final/MIN2/GEP_Monthly_Robust_min2.png}
   \end{center}
   \vspace{-4pt}
-  \footnotesize Score $\times 10^{-4}$; article-weighted monthly average.
+  \footnotesize
+  Share of monthly articles matching $\geq 2$ dictionary keywords.
   Annotated peaks correspond to key geoeconomic episodes.
 \end{frame}
 
-\begin{frame}{GEP Daily Index — Revised (1996–2025)}
-  \begin{center}
-    \includegraphics[height=0.78\textheight]%
-      {INDEX/index_8_revised/GEP_Daily_Events_Revised.png}
-  \end{center}
-\end{frame}
-
-% ═══════════════════════════════════════════════════════
-\section{Robustness Checks}
-% ═══════════════════════════════════════════════════════
-
-\begin{frame}{Robustness Check — Article- vs.\ Day-Weighted Aggregation}
-
-\textbf{Question:} Does the choice of monthly aggregation method drive the index?
-
-\medskip
-Two variants compared:
-\begin{itemize}
-  \item \textcolor{LightBlue}{\textbf{Baseline}} — article-weighted average:
-        $\displaystyle \text{GEP}_m = \frac{\sum_{t\in m} s_t \cdot n_t}{\sum_{t\in m} n_t}$
-  \item \textcolor{AccentOrange}{\textbf{Robustness}} — day-weighted average:
-        each trading day receives equal weight regardless of article volume
-\end{itemize}
-
-\medskip
-  \begin{center}
-    \includegraphics[width=0.92\textwidth]%
-      {INDEX/index_8_revised/robustness_check_GEP_revised.png}
-  \end{center}
-
-\vspace{-4pt}
-\footnotesize
-Correlation $r > 0.95$ confirms that the aggregation choice is \emph{not}
-the driving force behind the index shape.
-
-\end{frame}
-
-% ─── GEP vs GPR ──────────────────────────────
-\begin{frame}{GEP vs.\ GPR (Caldara \& Iacoviello 2022) — Revised}
-
-\textbf{External benchmark:} the Geopolitical Risk Index (GPRD) captures
-\emph{geopolitical} risk; our GEP captures \emph{geoeconomic} pressure.
-Both series are z-scored before comparison.
-
-  \begin{center}
-    \includegraphics[width=0.92\textwidth]%
-      {INDEX/index_8_revised/gep_vs_gprd_timeseries_revised.png}
-  \end{center}
-
-\vspace{-4pt}
-\footnotesize
-Overall Pearson $r \approx 0.13$.
-GEP Granger-causes GPRD from lag~2 onwards ($p < 0.05$) —
-suggesting geoeconomic pressure \emph{precedes} geopolitical risk spikes.
-
-\end{frame}
-
-\begin{frame}{Cross-Correlation: GEP Revised vs.\ GPRD}
-
-  \begin{center}
-    \includegraphics[width=0.88\textwidth]%
-      {INDEX/index_8_revised/gep_vs_gprd_crosscorr_revised.png}
-  \end{center}
-
-\medskip\small
-\begin{itemize}
-  \item \textcolor{LightBlue}{\textbf{Blue bars}} (lag $\ge 0$): GEP leads GPR
-  \item \textcolor{AccentOrange}{\textbf{Orange bars}} (lag $< 0$): GPR leads GEP
-  \item Peak correlation at \emph{positive} lag confirms that geoeconomic
-        pressure news tends to \emph{precede} escalation in geopolitical risk
-        readings.
-\end{itemize}
-
-\end{frame}
-
-% ═══════════════════════════════════════════════════════
-\section{Europe GEP Index}
-% ═══════════════════════════════════════════════════════
-
-\begin{frame}{Europe GEP Index — Setup}
-
-A parallel GEP index is constructed from a \textbf{Europe-filtered Reuters corpus}
-(articles with EU-country subject codes), using an \emph{independently trained}
-GTM dictionary.
-
-\medskip
-\begin{columns}[T]
-\column{0.48\textwidth}
-\begin{block}{Corpus statistics}
-\small
-\begin{tabular}{lrr}
-\toprule
- & \textbf{US} & \textbf{EU} \\
-\midrule
-Avg art./month & 62\,000 & 177\,000 \\
-Months & 357 & 348 \\
-Dict.\ words & 493 & 657 \\
-\bottomrule
-\end{tabular}
-\end{block}
-
-\column{0.48\textwidth}
-\begin{block}{Distribution of GEP$_m$}
-\small
-\begin{tabular}{lcc}
-\toprule
- & \textbf{US} & \textbf{EU} \\
-\midrule
-Mean & 0.000563 & 0.000400 \\
-Std  & 0.000146 & 0.000060 \\
-CV   & 0.260    & 0.149    \\
-\bottomrule
-\end{tabular}
-\smallskip\\
-EU index is notably \emph{flatter} (lower CV).
-This reflects larger article volume causing statistical smoothing.
-\end{block}
-\end{columns}
-
-\medskip\footnotesize
-\textbf{Normalisation:} EPU-style — $\text{GEP\_norm}_m = \dfrac{\text{GEP}_m}{\overline{\text{GEP}}} \times 100$
-(long-run mean = 100 for each series independently).
-
-\end{frame}
-
-% ─── Europe seeds vs US seeds ────────────────
-\begin{frame}{Europe GTM Seeds — Comparison with US (1/2)}
-
-\begin{center}
-\scriptsize
-\renewcommand{\arraystretch}{1.15}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{@{}p{2.8cm}p{4.2cm}p{5.5cm}@{}}
-\toprule
-\textbf{Sub-topic}
-  & \textbf{US (revised) seeds}
-  & \textbf{Europe seeds / key difference} \\
-\midrule
-\rowcolor{WUBlue!10}
-Sanctions
-  & \texttt{sectoral\_sanctions}, \texttt{targeted\_sanctions}
-  & \texttt{targeted\_sanctions}, \texttt{sanctions\_regime}
-    \newline\emph{Retains regime framing — EU sanctions language} \\
-Trade War
-  & \texttt{trade\_war}, \texttt{trade\_frictions}
-  & \texttt{trade\_war}, \texttt{trade\_friction} (singular)
-    \newline\emph{Fewer negative seeds (no financial\_markets)} \\
-\rowcolor{WUBlue!10}
-Export Controls
-  & \texttt{entity\_list}, \texttt{export\_controls}
-  & \texttt{export\_ban}, \texttt{export\_controls}
-    \newline\emph{No entity\_list — absent from EU corpus} \\
-Tariffs
-  & \texttt{import\_tariff}, \texttt{customs\_duty}
-  & same seeds; no \texttt{free\_trade} negative \\
-\bottomrule
-\end{tabular}}
-\end{center}
-\end{frame}
-
-\begin{frame}{Europe GTM Seeds — Comparison with US (2/2)}
-
-\begin{center}
-\scriptsize
-\renewcommand{\arraystretch}{1.15}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{@{}p{2.8cm}p{4.2cm}p{5.5cm}@{}}
-\toprule
-\textbf{Sub-topic}
-  & \textbf{US (revised) seeds}
-  & \textbf{Europe seeds / key difference} \\
-\midrule
-\rowcolor{WUBlue!10}
-Financial Coercion
-  & \texttt{frozen\_russian}, \texttt{payment\_freeze}
-  & \texttt{asset\_freeze}, \texttt{frozen\_assets}
-    \newline\emph{Generic freeze; \texttt{debt\_forgiveness} as negative} \\
-Retaliation
-  & \texttt{retaliation}, \texttt{retaliatory\_measures}
-  & same seeds \\
-\rowcolor{WUBlue!10}
-Protectionism
-  & \texttt{protectionism}, \texttt{economic\_nationalism}
-  & \texttt{protectionism}, \texttt{import\_quota}
-    \newline\emph{Quota framing common in EU WTO discourse} \\
-Embargo
-  & \texttt{trade\_embargo}, \texttt{oil\_embargo}
-  & \texttt{trade\_embargo}, \texttt{arms\_embargo}
-    \newline\emph{Arms embargo more salient in EU corpus (Russia, Iran)} \\
-\bottomrule
-\end{tabular}}
-\end{center}
-\end{frame}
-
-% ─── Europe word clouds ───────────────────────
-\begin{frame}{Word Clouds — All 8 Sub-topics (Europe)}
-  \begin{center}
-    \includegraphics[width=0.85\textwidth]%
-      {GTM_different_versions/GTM8_europe_results/Combined_Geoeconomic_Pressure_Grid_8.png}
-  \end{center}
-\end{frame}
-
-% ─── Europe monthly index ────────────────────
-\begin{frame}{GEP Monthly Index — Europe (1996–2025)}
+\begin{frame}{MIN2 GEP Index — Normalised (avg = 100)}
   \begin{center}
     \includegraphics[width=0.95\textwidth]%
-      {INDEX/index_8_europe/GEP_Monthly_Index_Europe.png}
+      {INDEX/index_new_final/MIN2/GEP_Monthly_Robust_min2_norm100.png}
   \end{center}
   \vspace{-4pt}
   \footnotesize
-  EPU-normalised; long-run mean = 100.
-  Lower coefficient of variation (0.149 vs 0.260 US) reflects larger article
-  pool and structural dictionary differences.
+  EPU-style normalisation: long-run average = 100.
+  Liberation Day (April 2025) registers at $\sim$200 — twice the historical average.
 \end{frame}
 
-% ─── US vs EU comparison ─────────────────────
-\begin{frame}{US vs.\ EU GEP — Head-to-Head Comparison}
+\begin{frame}{GEP vs.\ GPR (Caldara \& Iacoviello 2022)}
+
+\textbf{External benchmark:} GPR captures \emph{geopolitical} risk;
+MIN2 GEP captures \emph{geoeconomic} pressure.
+Both series z-scored before comparison.
+
   \begin{center}
-    \includegraphics[width=0.95\textwidth]%
-      {INDEX/us_eu_comparison/GEP_Monthly_US_vs_EU.png}
+    \includegraphics[width=0.92\textwidth]%
+      {INDEX/index_new_final/MIN2/gep_vs_gprd_timeseries.png}
   \end{center}
 
-  \vspace{-2pt}
-  \footnotesize
-  Both series normalised to mean = 100.
-  \textbf{Only 27\% dictionary overlap} — the two indices measure
-  \emph{structurally different} facets of geoeconomic pressure and
-  cannot be compared at the level of raw scores.
-  EU index is notably flatter; absolute level comparisons should be avoided.
-\end{frame}
-
-% ─── Dictionary divergence ────────────────────
-\begin{frame}{US vs.\ EU Dictionary Divergence}
-
-\begin{columns}[T]
-\column{0.45\textwidth}
-\begin{block}{Overlap statistics}
-\small
-\begin{tabular}{lcc}
-\toprule
- & \textbf{US} & \textbf{EU} \\
-\midrule
-Total words & 493 & 657 \\
-Common words & \multicolumn{2}{c}{195 (27\%)} \\
-Unique & 298 & 462 \\
-Mean weight & 0.064 & 0.072 \\
-\bottomrule
-\end{tabular}
-\end{block}
-
-\column{0.50\textwidth}
-\begin{block}{Key weight differences}
-\small
-\begin{tabular}{lc}
-\toprule
-\textbf{Word} & \textbf{EU $-$ US $\Delta$weight} \\
-\midrule
-\texttt{import\_duty}       & $+0.230$ \\
-\texttt{import\_restrictions} & $+0.200$ \\
-\texttt{imposing\_tariffs}  & $+0.160$ \\
-\texttt{protectionist}      & $-0.090$ \\
-\texttt{trade\_barriers}    & $-0.130$ \\
-\texttt{retaliatory\_tariffs} & $-0.090$ \\
-\bottomrule
-\end{tabular}
-\end{block}
-\end{columns}
-
-\bigskip\small
-\textbf{Interpretation:} EU dictionary emphasises
-\emph{import-side} terminology (\texttt{import\_duty}, \texttt{import\_restrictions});
-US dictionary emphasises \emph{protectionist} and \emph{retaliatory} framing
-consistent with the US trade policy debate.
+\vspace{-4pt}
+\footnotesize
+Low but positive Pearson $r$ —
+GEP and GPR are \emph{related but distinct}: they diverge most
+during purely economic coercion episodes (trade war 2018--2019)
+and converge during joint military--economic escalation (Ukraine 2022).
 
 \end{frame}
 
-% ═══════════════════════════════════════════════════════
-\section{Summary}
-% ═══════════════════════════════════════════════════════
+\begin{frame}{Cross-Correlation: MIN2 GEP vs.\ GPR}
+  \begin{center}
+    \includegraphics[width=0.88\textwidth]%
+      {INDEX/index_new_final/MIN2/gep_vs_gprd_crosscorr.png}
+  \end{center}
+  \medskip\small
+  Peak correlation at positive lags confirms that geoeconomic pressure
+  (trade tensions, sanctions escalation) tends to \emph{precede}
+  escalation in geopolitical risk readings.
+\end{frame}
 
-\begin{frame}{Summary \& Next Steps}
+% ════════════════════════════════════════════════════════
+\section{Return Predictability Regressions}
+% ════════════════════════════════════════════════════════
+
+\begin{frame}{Regression Setup}
+
+\textbf{Dependent variable:} S\&P 500 monthly (and quarterly) log return.
+
+\textbf{Key regressor:} GEP$_z$ — z-scored MIN2 index \textbf{in levels}.
+Using levels is valid because the bounded [0,1] ratio is stationary (ADF confirmed).
+
+\medskip
+\begin{center}
+\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}cll@{}}
+\toprule
+\textbf{Spec} & \textbf{Formula} & \textbf{Purpose} \\
+\midrule
+m1 & $r_t = \alpha + \beta\,\text{GEP}_z + \varepsilon$ & Univariate baseline \\
+m2 & $+ \text{GPR}_z$ & Separates GEP from geopolitical risk \\
+m3 & $+ \text{MktRF} + \text{SMB} + \text{HML}$ & Controls for factor exposure \\
+m4 & $+ \text{GEP}_{z,t-1} + \text{GPR}_{z,t-1}$ & Lag structure \\
+m\_rob & $r_t = \alpha + \beta\,\Delta\text{GEP}_z + \gamma\,\text{GPR}_z + \varepsilon$ & Robustness: differences \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\medskip
+\begin{itemize}
+  \item \textbf{Standard errors:} Newey-West HAC (bandwidth $= \lfloor 4(T/100)^{2/9}\rfloor$)
+  \item \textbf{Horizons:} $h=0$ (contemporaneous), $h=1$ (next-period predictability)
+  \item \textbf{Subperiods:} Full sample, Pre-GFC (1996--2007), GFC (2008--2011),
+        Post-GFC (2012--2021), Russia--Ukraine (2022--2023), 2025
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Main Results — Monthly, $h=0$ (Contemporaneous)}
+
+\begin{center}
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\textbf{Period (N)} & \multicolumn{2}{c}{\textbf{m1}} & \multicolumn{2}{c}{\textbf{m2}} & \textbf{m3 (GEP$_z$)} & \textbf{m\_rob ($\Delta$GEP$_z$)} \\
+                    & Coef & $p$ & Coef & $p$ & Coef / $p$ & Coef / $p$ \\
+\midrule
+\rowcolor{WUBlue!8}
+Full sample (N$\approx$355) & $-$0.005 & 0.16 & $-$0.004 & 0.25 & $+$0.001* / 0.005 & n.s. \\
+Pre-GFC (N=142) & \textcolor{AccentOrange}{$-$0.009*} & 0.025 & $-$0.010. & 0.070 & n.s. & \textcolor{AccentOrange}{$-$0.017* / 0.021} \\
+\rowcolor{WUBlue!8}
+GFC 2008--11 (N=48) & n.s. & — & n.s. & — & n.s. & n.s. \\
+Post-GFC (N=119) & n.s. & 0.76 & n.s. & 0.90 & \textcolor{AccentGreen}{$+$0.001** / 0.004} & n.s. \\
+\rowcolor{WUBlue!8}
+Russia--Ukraine (N=23) & n.s. & 0.23 & \textcolor{AccentOrange}{$-$0.047* / 0.021} & & n.s. & n.s. \\
+\bottomrule
+\end{tabular}}
+\end{center}
+
+\medskip\small
+\begin{itemize}
+  \item \textcolor{AccentOrange}{\textbf{Orange}}: negative — geo pressure \emph{hurts} returns (fear regime)
+  \item \textcolor{AccentGreen}{\textbf{Green}}: positive — geo pressure commands \emph{risk premium} (Post-GFC)
+  \item \textbf{m3 full sample}: significant only after stripping factor exposure
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Regime Flip: Pre-GFC vs.\ Post-GFC}
 
 \begin{columns}[T]
 \column{0.48\textwidth}
-\begin{block}{Done}
+\begin{block}{\textcolor{AccentOrange}{Pre-GFC (1996--2007): Fear regime}}
 \begin{itemize}\small
-  \item GTM-8 baseline index (US, 1996--2025)
-  \item Identified seed weaknesses $\to$ revised seeds for 4 of 8 topics
-  \item Index 8 Revised: cleaner sub-topic separation,
-        richer export-controls and financial-coercion signal
-  \item Robustness check: article- vs.\ day-weighted ($r > 0.95$)
-  \item External validation vs.\ GPR: $r \approx 0.13$;
-        GEP Granger-causes GPR (lag 2+)
-  \item Europe GEP index (independently trained GTM + dictionary)
-  \item US--EU comparison with EPU-style normalisation
+  \item GEP$_z$ = $-0.009^*$ in m1 (monthly)
+  \item GEP$_z$ = $-0.028^*$ in m1 (\emph{quarterly} — stronger)
+  \item m\_rob ($\Delta$GEP$_z$): $-0.017^*$ — levels and differences agree
+  \item Effect disappears once MktRF added (m3):
+        \emph{worked through broad market repricing}
+  \item \textbf{Mechanism:} geopolitical news caused immediate, market-wide fear selloffs
 \end{itemize}
 \end{block}
 
 \column{0.48\textwidth}
-\begin{block}{Next steps}
+\begin{block}{\textcolor{AccentGreen}{Post-GFC (2012--2021): Risk premium regime}}
 \begin{itemize}\small
-  \item Predictive regressions: GEP on stock-market indices (US \& EU)
-  \item Structural break tests around 2018 trade war, 2022 Ukraine
-  \item Regime-switching model (calm vs.\ high-pressure episodes)
-  \item Finalise thesis write-up and methodology chapter
+  \item GEP$_z$ = $+0.0008^{**}$ in m3 (controls required)
+  \item GPR$_z$ = $-0.013^*$ in m2 simultaneously
+  \item GEP and GPR load with \emph{opposite signs} — they capture distinct channels
+  \item \textbf{Mechanism:} in the low-vol QE era, geoeconomic uncertainty was a \emph{priced} factor
+        $\to$ high-GEP months earned higher risk-adjusted returns
 \end{itemize}
 \end{block}
 \end{columns}
 
 \bigskip
-\begin{alertblock}{Key finding so far}
-  The GEP index is \emph{distinct} from geopolitical risk (low correlation
-  with GPRD), suggesting it captures a novel and complementary signal
-  for financial markets.
+\begin{alertblock}{Key takeaway}
+  The sign of the GEP--return relationship is not stable over time.
+  Fear and risk-premium regimes alternate. Structural break analysis
+  (Bai-Perron) is consistent with this pattern.
+\end{alertblock}
+
+\end{frame}
+
+\begin{frame}{Predictability at $h=1$: No Leading Effect}
+
+\begin{center}
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Period} & \textbf{m1} ($p$) & \textbf{m2} ($p$) & \textbf{m3} ($p$) & \textbf{m\_rob} ($p$) \\
+\midrule
+Full sample    & 0.70 & 0.73 & 0.54 & 0.71 \\
+Pre-GFC        & 0.91 & 0.42 & 0.51 & 0.34 \\
+GFC 2008--11   & 0.66 & 0.57 & 0.45 & 0.82 \\
+Post-GFC       & 0.73 & 0.93 & 0.94 & 0.84 \\
+Russia--Ukraine & 0.97 & 0.40 & 0.44 & 0.29 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\medskip
+\begin{block}{Interpretation}
+\textbf{GEP is a coincident indicator, not a leading one.}
+No specification delivers significant next-month (or next-quarter) return
+predictability. The market processes geoeconomic information
+\emph{contemporaneously} — the signal is already in prices by month-end.
+\end{block}
+
+\medskip\small
+Exception: quarterly full-sample m4 has GEP$_{z,t-1}$ = $+0.0024^*$ ($p=0.044$) —
+a weak quarterly lag that may reflect slow institutional portfolio rebalancing.
+
+\end{frame}
+
+\begin{frame}{Quarterly Results — Selected Highlights}
+
+\begin{center}
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\resizebox{0.92\textwidth}{!}{%
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Period (N)} & \textbf{Spec} & \textbf{GEP$_z$ coef} & \textbf{$p$} & \textbf{R$^2$} & \textbf{Note} \\
+\midrule
+Full sample (118) & m3 & $+0.0020$ & 0.063 & 0.989 & Marginal positive \\
+Full sample (118) & m4 & GEP lag $+0.0024^*$ & 0.044 & 0.989 & Lagged risk premium \\
+\rowcolor{WUBlue!8}
+Pre-GFC (46)      & m1 & $-0.0284^*$ & 0.022 & 0.085 & \textbf{Strong negative} \\
+Pre-GFC (46)      & m3 & n.s. & — & 0.987 & FF3 absorbs \\
+Post-GFC (40)     & m3 & $+0.0017^.$ & 0.052 & 0.993 & Marginal positive \\
+\rowcolor{WUBlue!8}
+Post-GFC (40)     & m4 & GPR lag $-0.049^*$ & 0.019 & 0.993 & GPR lag drives next quarter \\
+\bottomrule
+\end{tabular}}
+\end{center}
+
+\medskip\small
+Quarterly aggregation (returns summed, GEP averaged within quarter)
+amplifies the Pre-GFC negative signal: coefficient triples in magnitude ($-0.009 \to -0.028$),
+confirming the effect is genuine and not a monthly artefact.
+
+\end{frame}
+
+% ════════════════════════════════════════════════════════
+\section{Summary}
+% ════════════════════════════════════════════════════════
+
+\begin{frame}{Summary}
+
+\begin{columns}[T]
+\column{0.50\textwidth}
+\begin{block}{Methodology (completed)}
+\begin{itemize}\small
+  \item GTM-6 final topic model — 6 coherent sub-topics
+        (Trade Coercion consolidates 3 old topics)
+  \item MIN2 index: GEP = share of articles with $\geq 2$ keywords
+  \item Stationary by construction $\to$ levels-based regression
+  \item Robustness: MIN1, MIN3, MIN4 variants;
+        $\Delta$GEP$_z$ column in regressions
+  \item External validation vs.\ GPR: low $r$,
+        GEP precedes GPR in cross-correlation
+\end{itemize}
+\end{block}
+
+\column{0.46\textwidth}
+\begin{block}{Empirical findings (completed)}
+\begin{itemize}\small
+  \item \textbf{Pre-GFC:} GEP$_z$ negative and significant —
+        geoeconomic pressure hurts returns (fear regime)
+  \item \textbf{Post-GFC:} positive conditional on FF3 —
+        geopolitical risk premium
+  \item \textbf{Russia--Ukraine:} strong negative —
+        fear regime returns
+  \item \textbf{$h=1$:} no predictability anywhere —
+        coincident, not leading indicator
+  \item GEP and GPR have \emph{opposite} signs in Post-GFC:
+        distinct asset pricing channels
+\end{itemize}
+\end{block}
+\end{columns}
+
+\bigskip
+\begin{alertblock}{Central finding}
+  The MIN2 GEP index captures a \textbf{regime-dependent} relationship
+  with equity returns: a fear channel dominates in volatile periods
+  (Pre-GFC, Ukraine) while a risk-premium channel dominates in
+  low-volatility periods (Post-GFC).
+  The index is \emph{distinct from GPR} and adds new information
+  about geoeconomic coercion specifically.
 \end{alertblock}
 
 \end{frame}
