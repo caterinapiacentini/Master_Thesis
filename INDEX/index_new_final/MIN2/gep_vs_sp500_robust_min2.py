@@ -16,8 +16,11 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as mticker
 import yfinance as yf
+import statsmodels.api as sm
+import pandas_datareader.data as web
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+# ── Hardcoded Path ─────────────────────────────────────────────────────────────
+BASE = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_new_final/MIN2"
 
 # ── Load GEP data ──────────────────────────────────────────────────────────────
 monthly = pd.read_csv(os.path.join(BASE, "GEP_Monthly_Robust_min2.csv"))
@@ -30,6 +33,7 @@ daily = daily.set_index("date").sort_index()
 daily = daily[daily["n_articles"] > 0]   # trading days only
 
 # ── Download S&P 500 ───────────────────────────────────────────────────────────
+print("Downloading S&P 500 data...")
 sp500_mo_raw = yf.download("^GSPC", start="1995-12-01", end="2025-12-31",
                             interval="1mo", auto_adjust=True, progress=False)
 sp500_mo = sp500_mo_raw[["Close"]].copy()
@@ -48,12 +52,26 @@ sp500_d = sp500_d.sort_index()
 sp500_d["log_ret"] = np.log(sp500_d["sp500"] / sp500_d["sp500"].shift(1))
 sp500_d = sp500_d.dropna()
 
+# ── Download Fama-French 3 Factors ─────────────────────────────────────────────
+print("Downloading Fama-French 3 Factors...")
+# Monthly FF3
+ff3_mo_raw = web.DataReader('F-F_Research_Data_Factors', 'famafrench', start='1995-12-01', end='2025-12-31')[0]
+ff3_mo_raw.index = ff3_mo_raw.index.to_timestamp() # Aligns to 1st of month
+
+# Daily FF3
+ff3_d_raw = web.DataReader('F-F_Research_Data_Factors_daily', 'famafrench', start='1995-12-01', end='2025-12-31')[0]
+ff3_d_raw.index = pd.to_datetime(ff3_d_raw.index)
+
 # ── Merge ──────────────────────────────────────────────────────────────────────
+# Merge Monthly
 df_mo = monthly[["GEP_monthly"]].join(sp500_mo[["sp500", "log_ret"]], how="inner")
+df_mo = df_mo.join(ff3_mo_raw[['Mkt-RF', 'SMB', 'HML']], how="inner")
 df_mo["gep_pct"]     = df_mo["GEP_monthly"] * 100
 df_mo["cum_log_ret"] = df_mo["log_ret"].cumsum()
 
+# Merge Daily
 df_d = daily[["GEP_daily"]].join(sp500_d[["log_ret"]], how="inner")
+df_d = df_d.join(ff3_d_raw[['Mkt-RF', 'SMB', 'HML']], how="inner")
 df_d["gep_pct"]     = df_d["GEP_daily"] * 100
 df_d["cum_log_ret"] = df_d["log_ret"].cumsum()
 
@@ -79,6 +97,7 @@ events_d = {
 # ══════════════════════════════════════════════════════════════════════════════
 # PLOT 1 — Monthly Z-score overlay
 # ══════════════════════════════════════════════════════════════════════════════
+print("Generating Plots...")
 df_z = df_mo.copy()
 df_z["gep_z"]   = (df_z["GEP_monthly"] - df_z["GEP_monthly"].mean()) / df_z["GEP_monthly"].std()
 df_z["sp500_z"] = (df_z["sp500"]       - df_z["sp500"].mean())       / df_z["sp500"].std()
@@ -113,7 +132,6 @@ ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 plt.tight_layout()
 out = os.path.join(BASE, "gep_vs_sp500_zscore.png")
 plt.savefig(out, dpi=150, bbox_inches="tight")
-print(f"Saved: {out}")
 plt.close()
 
 
@@ -174,7 +192,6 @@ for month_str, label in events_mo.items():
 plt.tight_layout()
 out = os.path.join(BASE, "gep_vs_sp500_logret.png")
 plt.savefig(out, dpi=150, bbox_inches="tight")
-print(f"Saved: {out}")
 plt.close()
 
 
@@ -240,5 +257,77 @@ for date_str, label in events_d.items():
 plt.tight_layout()
 out = os.path.join(BASE, "gep_vs_sp500_logret_daily.png")
 plt.savefig(out, dpi=150, bbox_inches="tight")
-print(f"Saved: {out}")
 plt.close()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 6. REGRESSION ANALYSIS: GEP vs S&P 500 Log Returns (with FF3)
+# ══════════════════════════════════════════════════════════════════════════════
+print("\n" + "="*70)
+print("REGRESSION ANALYSIS: GEP vs S&P 500 Log Returns (Controlling for FF3)")
+print("="*70)
+
+# --- A. MONTHLY REGRESSIONS ---
+print("\n" + "-"*50)
+print(" PART A: MONTHLY FREQUENCY")
+print("-"*50)
+
+# Model 1: Contemporaneous Monthly
+print("\n--- Model 1: Contemporaneous (Same Month) ---")
+X_mo1 = df_mo[['gep_pct', 'Mkt-RF', 'SMB', 'HML']]
+X_mo1 = sm.add_constant(X_mo1)
+y_mo1 = df_mo['log_ret']
+
+mo_model1 = sm.OLS(y_mo1, X_mo1).fit()
+print(mo_model1.summary().tables[1])
+print(f"R-squared: {mo_model1.rsquared:.4f} | p-value (gep_pct): {mo_model1.pvalues['gep_pct']:.4f}")
+
+# Model 2: Predictive Monthly
+print("\n--- Model 2: Predictive (Lagged 1 Month) ---")
+df_mo['gep_pct_lag1'] = df_mo['gep_pct'].shift(1)
+df_mo['Mkt-RF_lag1']  = df_mo['Mkt-RF'].shift(1)
+df_mo['SMB_lag1']     = df_mo['SMB'].shift(1)
+df_mo['HML_lag1']     = df_mo['HML'].shift(1)
+
+df_mo_clean = df_mo.dropna(subset=['gep_pct_lag1', 'Mkt-RF_lag1', 'SMB_lag1', 'HML_lag1', 'log_ret'])
+
+X_mo2 = df_mo_clean[['gep_pct_lag1', 'Mkt-RF_lag1', 'SMB_lag1', 'HML_lag1']]
+X_mo2 = sm.add_constant(X_mo2)
+y_mo2 = df_mo_clean['log_ret']
+
+mo_model2 = sm.OLS(y_mo2, X_mo2).fit()
+print(mo_model2.summary().tables[1])
+print(f"R-squared: {mo_model2.rsquared:.4f} | p-value (gep_pct_lag1): {mo_model2.pvalues['gep_pct_lag1']:.4f}")
+
+
+# --- B. DAILY REGRESSIONS ---
+print("\n\n" + "-"*50)
+print(" PART B: DAILY FREQUENCY")
+print("-"*50)
+
+# Model 3: Contemporaneous Daily
+print("\n--- Model 3: Contemporaneous (Same Day) ---")
+X_d1 = df_d[['gep_pct', 'Mkt-RF', 'SMB', 'HML']]
+X_d1 = sm.add_constant(X_d1)
+y_d1 = df_d['log_ret']
+
+d_model1 = sm.OLS(y_d1, X_d1).fit()
+print(d_model1.summary().tables[1])
+print(f"R-squared: {d_model1.rsquared:.4f} | p-value (gep_pct): {d_model1.pvalues['gep_pct']:.4f}")
+
+# Model 4: Predictive Daily
+print("\n--- Model 4: Predictive (Lagged 1 Trading Day) ---")
+df_d['gep_pct_lag1'] = df_d['gep_pct'].shift(1)
+df_d['Mkt-RF_lag1']  = df_d['Mkt-RF'].shift(1)
+df_d['SMB_lag1']     = df_d['SMB'].shift(1)
+df_d['HML_lag1']     = df_d['HML'].shift(1)
+
+df_d_clean = df_d.dropna(subset=['gep_pct_lag1', 'Mkt-RF_lag1', 'SMB_lag1', 'HML_lag1', 'log_ret'])
+
+X_d2 = df_d_clean[['gep_pct_lag1', 'Mkt-RF_lag1', 'SMB_lag1', 'HML_lag1']]
+X_d2 = sm.add_constant(X_d2)
+y_d2 = df_d_clean['log_ret']
+
+d_model2 = sm.OLS(y_d2, X_d2).fit()
+print(d_model2.summary().tables[1])
+print(f"R-squared: {d_model2.rsquared:.4f} | p-value (gep_pct_lag1): {d_model2.pvalues['gep_pct_lag1']:.4f}")
+print("="*70 + "\n")
