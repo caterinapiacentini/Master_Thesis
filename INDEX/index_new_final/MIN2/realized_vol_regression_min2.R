@@ -4,7 +4,7 @@
 # Following: Zhang et al. "Geopolitical risk and stock market volatility:
 #            A global perspective"
 #
-# RV_t   = sum_{j=1}^{M_t} r^2_{t,j}   (sum of squared daily returns in month t)
+# RV_t   = sum_{j=1}^{M_t} r^2_{t,j}   (sum of squared daily returns in period t)
 # LV_t   = log(RV_t)
 #
 # Main specification (Zhang et al., eq. with GEP replacing GPR):
@@ -13,7 +13,7 @@
 # Also run baseline without AR term for comparison:
 #   LV_t = β0 + β1*dGEP_z_t + ε_t
 #
-# h = 0 | Monthly | Newey-West HAC SEs
+# h = 0 | Monthly AND Quarterly | Newey-West HAC SEs
 # Subperiods: 1996-2025 | 2005-2015 | 2015-2025
 # =============================================================================
 
@@ -68,7 +68,7 @@ gep_raw <- read.csv(file.path(BASE_MIN2, "GEP_Monthly_Robust_min2.csv"),
                     stringsAsFactors = FALSE)
 gep_raw$date <- as.Date(paste0(gep_raw$month, "-01"))
 
-gep <- gep_raw %>%
+gep_monthly <- gep_raw %>%
   filter(!is.na(GEP_monthly)) %>%
   select(date, GEP = GEP_monthly) %>%
   mutate(date = floor_date(date, "month")) %>%
@@ -77,30 +77,66 @@ gep <- gep_raw %>%
 # =============================================================================
 # 3. MONTHLY PANEL — merge, first-difference GEP, z-score, AR lag of LV
 # =============================================================================
-df <- rv_monthly %>%
-  inner_join(gep, by = "date") %>%
+df_m <- rv_monthly %>%
+  inner_join(gep_monthly, by = "date") %>%
   arrange(date) %>%
   filter(date >= as.Date("1996-01-01")) %>%
   mutate(
-    LV_lag1 = lag(LV, 1),                                          # AR(1) term
+    LV_lag1 = lag(LV, 1),
     dGEP    = GEP - lag(GEP),
     dGEP_z  = (dGEP - mean(dGEP, na.rm = TRUE)) / sd(dGEP, na.rm = TRUE)
   ) %>%
   filter(!is.na(dGEP_z) & !is.na(LV_lag1))
 
-cat(sprintf("Full panel: %d obs  (%s -> %s)\n",
-            nrow(df), min(df$date), max(df$date)))
+cat(sprintf("Monthly panel: %d obs  (%s -> %s)\n",
+            nrow(df_m), min(df_m$date), max(df_m$date)))
 
 # =============================================================================
-# 4. STATIONARITY CHECK
+# 4. QUARTERLY PANEL — aggregate RV and GEP to quarter, then same transforms
+#    RV_q = sum of all daily r^2 within the quarter (extends Zhang et al. to Q)
+#    GEP_q = mean of monthly GEP within the quarter
+# =============================================================================
+rv_quarterly <- sp500_daily %>%
+  mutate(quarter = floor_date(date, "quarter")) %>%
+  group_by(quarter) %>%
+  summarise(
+    RV     = sum(log_ret^2, na.rm = TRUE),
+    n_days = n(),
+    .groups = "drop"
+  ) %>%
+  rename(date = quarter) %>%
+  mutate(LV = log(RV))
+
+gep_quarterly <- gep_monthly %>%
+  mutate(quarter = floor_date(date, "quarter")) %>%
+  group_by(quarter) %>%
+  summarise(GEP = mean(GEP, na.rm = TRUE), .groups = "drop") %>%
+  rename(date = quarter)
+
+df_q <- rv_quarterly %>%
+  inner_join(gep_quarterly, by = "date") %>%
+  arrange(date) %>%
+  filter(date >= as.Date("1996-01-01")) %>%
+  mutate(
+    LV_lag1 = lag(LV, 1),
+    dGEP    = GEP - lag(GEP),
+    dGEP_z  = (dGEP - mean(dGEP, na.rm = TRUE)) / sd(dGEP, na.rm = TRUE)
+  ) %>%
+  filter(!is.na(dGEP_z) & !is.na(LV_lag1))
+
+cat(sprintf("Quarterly panel: %d obs  (%s -> %s)\n",
+            nrow(df_q), min(df_q$date), max(df_q$date)))
+
+# =============================================================================
+# 5. STATIONARITY CHECK — monthly panel (quarterly analogous)
 # =============================================================================
 cat("\n", strrep("=", 70), "\n")
-cat("STATIONARITY CHECK\n")
+cat("STATIONARITY CHECK (monthly panel)\n")
 cat(strrep("=", 70), "\n")
 
 adf_vars <- list(
-  "LV      (levels)"      = df$LV,
-  "dGEP_z  (differences)" = df$dGEP_z
+  "LV      (levels)"      = df_m$LV,
+  "dGEP_z  (differences)" = df_m$dGEP_z
 )
 
 for (vname in names(adf_vars)) {
@@ -112,20 +148,25 @@ for (vname in names(adf_vars)) {
 }
 
 # =============================================================================
-# 5. SUBPERIODS
+# 6. SUBPERIODS
 # =============================================================================
-subperiods <- list(
-  "Full sample  (1996-2025)" = df,
-  "2005-2015"                = df %>% filter(date >= as.Date("2005-01-01") &
-                                               date <= as.Date("2015-12-31")),
-  "2015-2025"                = df %>% filter(date >= as.Date("2015-01-01"))
-)
+make_subperiods <- function(df) {
+  list(
+    "Full sample  (1996-2025)" = df,
+    "2005-2015"                = df %>% filter(date >= as.Date("2005-01-01") &
+                                                 date <= as.Date("2015-12-31")),
+    "2015-2025"                = df %>% filter(date >= as.Date("2015-01-01"))
+  )
+}
+
+subperiods_m <- make_subperiods(df_m)
+subperiods_q <- make_subperiods(df_q)
 
 # =============================================================================
-# 6. REGRESSION RUNNER — Newey-West HAC SEs
+# 7. REGRESSION RUNNER — Newey-West HAC SEs
 #
-#   m_base : LV_t ~ dGEP_z_t                          (no AR term, baseline)
-#   m_ar   : LV_t ~ LV_{t-1} + dGEP_z_t              (Zhang et al. spec)
+#   m_base : LV_t ~ dGEP_z_t                (no AR term, baseline)
+#   m_ar   : LV_t ~ LV_{t-1} + dGEP_z_t    (Zhang et al. spec)
 # =============================================================================
 run_models <- function(d) {
   d <- d %>% filter(!is.na(LV) & !is.na(LV_lag1) & !is.na(dGEP_z))
@@ -148,7 +189,7 @@ run_models <- function(d) {
   }
 
   list(
-    m_base = safe_nw(LV ~ dGEP_z,          d),
+    m_base = safe_nw(LV ~ dGEP_z,           d),
     m_ar   = safe_nw(LV ~ LV_lag1 + dGEP_z, d),
     n      = nrow(d),
     nw_lag = nw_lag
@@ -156,37 +197,43 @@ run_models <- function(d) {
 }
 
 # =============================================================================
-# 7. RUN ALL MODELS
+# 8. RUN ALL MODELS
 # =============================================================================
-results <- lapply(subperiods, run_models)
+results_m <- lapply(subperiods_m, run_models)
+results_q <- lapply(subperiods_q, run_models)
 
 # =============================================================================
-# 8. PRINT RESULTS
+# 9. PRINT RESULTS
 # =============================================================================
-cat("\n", strrep("=", 70), "\n")
-cat("REALIZED VOLATILITY REGRESSIONS — MONTHLY (h = 0)\n")
-cat("  LV_t   = log(RV_t) = log(sum of squared daily log-returns in month t)\n")
-cat("  dGEP_z = standardised first difference of GEP (MIN2)\n")
-cat("\n")
-cat("  m_base : LV_t ~ dGEP_z_t                       [no AR, baseline]\n")
-cat("  m_ar   : LV_t ~ LV_{t-1} + dGEP_z_t            [Zhang et al. spec]\n")
-cat("  SEs    : Newey-West HAC\n")
-cat(strrep("=", 70), "\n")
+print_results <- function(results, subperiods, freq_label) {
+  cat("\n", strrep("=", 70), "\n")
+  cat(sprintf("REALIZED VOLATILITY REGRESSIONS — %s (h = 0)\n", freq_label))
+  cat("  LV_t   = log(sum of squared daily log-returns in period t)\n")
+  cat("  dGEP_z = standardised first difference of GEP (MIN2)\n")
+  cat("\n")
+  cat("  m_base : LV_t ~ dGEP_z_t                    [no AR, baseline]\n")
+  cat("  m_ar   : LV_t ~ LV_{t-1} + dGEP_z_t         [Zhang et al. spec]\n")
+  cat("  SEs    : Newey-West HAC\n")
+  cat(strrep("=", 70), "\n")
 
-for (period_name in names(subperiods)) {
-  models <- results[[period_name]]
-  if (is.null(models)) next
+  for (period_name in names(subperiods)) {
+    models <- results[[period_name]]
+    if (is.null(models)) next
 
-  cat(sprintf("\n>> %s  |  N=%d  |  NW lag=%d\n",
-              period_name, models$n, models$nw_lag))
+    cat(sprintf("\n>> %s  |  N=%d  |  NW lag=%d\n",
+                period_name, models$n, models$nw_lag))
 
-  for (mn in c("m_base", "m_ar")) {
-    m <- models[[mn]]
-    if (is.null(m)) next
-    cat(sprintf("  [%s]  R2=%.4f  Adj.R2=%.4f\n", mn, m$r2, m$adj_r2))
-    print(m$ct)
+    for (mn in c("m_base", "m_ar")) {
+      m <- models[[mn]]
+      if (is.null(m)) next
+      cat(sprintf("  [%s]  R2=%.4f  Adj.R2=%.4f\n", mn, m$r2, m$adj_r2))
+      print(m$ct)
+    }
   }
 }
+
+print_results(results_m, subperiods_m, "MONTHLY")
+print_results(results_q, subperiods_q, "QUARTERLY")
 
 cat("\n", strrep("=", 70), "\n")
 cat("DONE\n")
