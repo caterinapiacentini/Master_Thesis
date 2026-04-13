@@ -4,14 +4,16 @@
 # Following: Zhang et al. "Geopolitical risk and stock market volatility:
 #            A global perspective"
 #
-# RV_t = sum_{j=1}^{M_t} r^2_{t,j}   (sum of squared daily returns in month t)
+# RV_t   = sum_{j=1}^{M_t} r^2_{t,j}   (sum of squared daily returns in month t)
+# LV_t   = log(RV_t)
 #
-# Specifications (h = 1, monthly, Newey-West HAC SEs):
-#   m1     : RV_{t+1} ~ dGEP_z_t
-#   m2     : RV_{t+1} ~ dGEP_z_t + dGPR_z_t     [main spec]
-#   m1_log : log(RV_{t+1}) ~ dGEP_z_t
-#   m2_log : log(RV_{t+1}) ~ dGEP_z_t + dGPR_z_t
+# Main specification (Zhang et al., eq. with GEP replacing GPR):
+#   LV_t = β0 + β1*LV_{t-1} + β2*dGEP_z_t + ε_t
 #
+# Also run baseline without AR term for comparison:
+#   LV_t = β0 + β1*dGEP_z_t + ε_t
+#
+# h = 0 | Monthly | Newey-West HAC SEs
 # Subperiods: 1996-2025 | 2005-2015 | 2015-2025
 # =============================================================================
 
@@ -57,7 +59,7 @@ rv_monthly <- sp500_daily %>%
     .groups = "drop"
   ) %>%
   rename(date = month) %>%
-  mutate(log_RV = log(RV))
+  mutate(LV = log(RV))
 
 # =============================================================================
 # 2. GEP — MIN2 monthly
@@ -73,56 +75,32 @@ gep <- gep_raw %>%
   arrange(date)
 
 # =============================================================================
-# 3. GPR — monthly
-# =============================================================================
-gpr_raw  <- read_excel(GPR_PATH)
-
-date_col <- names(gpr_raw)[sapply(gpr_raw, function(x)
-  inherits(x, "Date") || inherits(x, "POSIXct"))][1]
-if (is.na(date_col)) date_col <- names(gpr_raw)[1]
-
-gpr <- gpr_raw %>%
-  rename(date = all_of(date_col)) %>%
-  mutate(date = floor_date(as.Date(date), "month"),
-         GPR  = as.numeric(GPR)) %>%
-  filter(!is.na(GPR)) %>%
-  select(date, GPR) %>%
-  arrange(date)
-
-# =============================================================================
-# 4. MONTHLY PANEL — merge, first-difference, z-score, lead RV for h=1
+# 3. MONTHLY PANEL — merge, first-difference GEP, z-score, AR lag of LV
 # =============================================================================
 df <- rv_monthly %>%
   inner_join(gep, by = "date") %>%
-  inner_join(gpr, by = "date") %>%
   arrange(date) %>%
   filter(date >= as.Date("1996-01-01")) %>%
   mutate(
-    dGEP   = GEP - lag(GEP),
-    dGPR   = GPR - lag(GPR),
-    dGEP_z = (dGEP - mean(dGEP, na.rm = TRUE)) / sd(dGEP, na.rm = TRUE),
-    dGPR_z = (dGPR - mean(dGPR, na.rm = TRUE)) / sd(dGPR, na.rm = TRUE),
-    # h = 1: next month's RV is the dependent variable
-    RV_lead1     = lead(RV, 1),
-    log_RV_lead1 = lead(log_RV, 1)
+    LV_lag1 = lag(LV, 1),                                          # AR(1) term
+    dGEP    = GEP - lag(GEP),
+    dGEP_z  = (dGEP - mean(dGEP, na.rm = TRUE)) / sd(dGEP, na.rm = TRUE)
   ) %>%
-  filter(!is.na(dGEP_z) & !is.na(dGPR_z))
+  filter(!is.na(dGEP_z) & !is.na(LV_lag1))
 
 cat(sprintf("Full panel: %d obs  (%s -> %s)\n",
             nrow(df), min(df$date), max(df$date)))
 
 # =============================================================================
-# 5. STATIONARITY CHECK
+# 4. STATIONARITY CHECK
 # =============================================================================
 cat("\n", strrep("=", 70), "\n")
 cat("STATIONARITY CHECK\n")
 cat(strrep("=", 70), "\n")
 
 adf_vars <- list(
-  "RV          (levels)"  = df$RV,
-  "log_RV      (levels)"  = df$log_RV,
-  "dGEP_z  (differences)" = df$dGEP_z,
-  "dGPR_z  (differences)" = df$dGPR_z
+  "LV      (levels)"      = df$LV,
+  "dGEP_z  (differences)" = df$dGEP_z
 )
 
 for (vname in names(adf_vars)) {
@@ -134,7 +112,7 @@ for (vname in names(adf_vars)) {
 }
 
 # =============================================================================
-# 6. SUBPERIODS
+# 5. SUBPERIODS
 # =============================================================================
 subperiods <- list(
   "Full sample  (1996-2025)" = df,
@@ -144,17 +122,13 @@ subperiods <- list(
 )
 
 # =============================================================================
-# 7. REGRESSION RUNNER — h = 1, Newey-West HAC SEs
+# 6. REGRESSION RUNNER — Newey-West HAC SEs
 #
-#   m1     : RV_{t+1}     ~ dGEP_z_t
-#   m2     : RV_{t+1}     ~ dGEP_z_t + dGPR_z_t
-#   m1_log : log(RV_{t+1}) ~ dGEP_z_t
-#   m2_log : log(RV_{t+1}) ~ dGEP_z_t + dGPR_z_t
+#   m_base : LV_t ~ dGEP_z_t                          (no AR term, baseline)
+#   m_ar   : LV_t ~ LV_{t-1} + dGEP_z_t              (Zhang et al. spec)
 # =============================================================================
 run_models <- function(d) {
-  d <- d %>%
-    filter(!is.na(RV_lead1) & !is.na(log_RV_lead1) &
-           !is.na(dGEP_z)   & !is.na(dGPR_z))
+  d <- d %>% filter(!is.na(LV) & !is.na(LV_lag1) & !is.na(dGEP_z))
 
   if (nrow(d) < 16) {
     cat(sprintf("  Skipping: only %d complete obs\n", nrow(d)))
@@ -174,33 +148,28 @@ run_models <- function(d) {
   }
 
   list(
-    m1     = safe_nw(RV_lead1     ~ dGEP_z,          d),
-    m2     = safe_nw(RV_lead1     ~ dGEP_z + dGPR_z, d),
-    m1_log = safe_nw(log_RV_lead1 ~ dGEP_z,          d),
-    m2_log = safe_nw(log_RV_lead1 ~ dGEP_z + dGPR_z, d),
+    m_base = safe_nw(LV ~ dGEP_z,          d),
+    m_ar   = safe_nw(LV ~ LV_lag1 + dGEP_z, d),
     n      = nrow(d),
     nw_lag = nw_lag
   )
 }
 
 # =============================================================================
-# 8. RUN ALL MODELS
+# 7. RUN ALL MODELS
 # =============================================================================
 results <- lapply(subperiods, run_models)
 
 # =============================================================================
-# 9. PRINT RESULTS
+# 8. PRINT RESULTS
 # =============================================================================
 cat("\n", strrep("=", 70), "\n")
-cat("REALIZED VOLATILITY REGRESSIONS — MONTHLY (h = 1)\n")
-cat("  RV_t   = sum of squared daily log-returns in month t (Zhang et al.)\n")
+cat("REALIZED VOLATILITY REGRESSIONS — MONTHLY (h = 0)\n")
+cat("  LV_t   = log(RV_t) = log(sum of squared daily log-returns in month t)\n")
 cat("  dGEP_z = standardised first difference of GEP (MIN2)\n")
-cat("  dGPR_z = standardised first difference of GPR\n")
 cat("\n")
-cat("  m1     : RV_{t+1}     ~ dGEP_z_t\n")
-cat("  m2     : RV_{t+1}     ~ dGEP_z_t + dGPR_z_t   [main spec]\n")
-cat("  m1_log : log(RV_{t+1}) ~ dGEP_z_t\n")
-cat("  m2_log : log(RV_{t+1}) ~ dGEP_z_t + dGPR_z_t\n")
+cat("  m_base : LV_t ~ dGEP_z_t                       [no AR, baseline]\n")
+cat("  m_ar   : LV_t ~ LV_{t-1} + dGEP_z_t            [Zhang et al. spec]\n")
 cat("  SEs    : Newey-West HAC\n")
 cat(strrep("=", 70), "\n")
 
@@ -211,7 +180,7 @@ for (period_name in names(subperiods)) {
   cat(sprintf("\n>> %s  |  N=%d  |  NW lag=%d\n",
               period_name, models$n, models$nw_lag))
 
-  for (mn in c("m1", "m2", "m1_log", "m2_log")) {
+  for (mn in c("m_base", "m_ar")) {
     m <- models[[mn]]
     if (is.null(m)) next
     cat(sprintf("  [%s]  R2=%.4f  Adj.R2=%.4f\n", mn, m$r2, m$adj_r2))
