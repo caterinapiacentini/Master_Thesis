@@ -2,13 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 gep_vs_sp500_robust_min2.py
-
-GEP Robust min-2 index vs S&P 500 — three comparison plots:
-  1. gep_vs_sp500_zscore.png         — monthly Z-score overlay
-  2. gep_vs_sp500_logret.png         — two-panel: GEP monthly + S&P log returns
-  3. gep_vs_sp500_logret_daily.png   — two-panel: GEP daily  + S&P log returns
+GEP Robust min-2 index vs S&P 500 — three comparison plots + regressions
+with FF3 and GPR controls, full sample and subsamples.
 """
-
 import os
 import pandas as pd
 import numpy as np
@@ -19,8 +15,10 @@ import yfinance as yf
 import statsmodels.api as sm
 import pandas_datareader.data as web
 
-# ── Hardcoded Path ─────────────────────────────────────────────────────────────
-BASE = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_new_final/MIN2"
+# ── Hardcoded Paths ────────────────────────────────────────────────────────────
+BASE     = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_new_final/MIN2"
+GPR_D_PATH  = "/Users/catepiacentini/Desktop/tesi/literature/data_gpr_daily_recent.xls"
+GPR_MO_PATH = "/Users/catepiacentini/Desktop/tesi/literature/data_gpr_export.xls"
 
 # ── Load GEP data ──────────────────────────────────────────────────────────────
 monthly = pd.read_csv(os.path.join(BASE, "GEP_Monthly_Robust_min2.csv"))
@@ -30,12 +28,12 @@ monthly = monthly.set_index("month").sort_index()
 daily = pd.read_csv(os.path.join(BASE, "GEP_Daily_Robust_min2.csv"))
 daily["date"] = pd.to_datetime(daily["date"])
 daily = daily.set_index("date").sort_index()
-daily = daily[daily["n_articles"] > 0]   # trading days only
+daily = daily[daily["n_articles"] > 0]
 
 # ── Download S&P 500 ───────────────────────────────────────────────────────────
 print("Downloading S&P 500 data...")
 sp500_mo_raw = yf.download("^GSPC", start="1995-12-01", end="2025-12-31",
-                            interval="1mo", auto_adjust=True, progress=False)
+                           interval="1mo", auto_adjust=True, progress=False)
 sp500_mo = sp500_mo_raw[["Close"]].copy()
 sp500_mo.index = sp500_mo.index.to_period("M").to_timestamp()
 sp500_mo.columns = ["sp500"]
@@ -44,7 +42,7 @@ sp500_mo["log_ret"] = np.log(sp500_mo["sp500"] / sp500_mo["sp500"].shift(1))
 sp500_mo = sp500_mo.dropna()
 
 sp500_d_raw = yf.download("^GSPC", start="1995-12-01", end="2025-12-31",
-                           interval="1d", auto_adjust=True, progress=False)
+                          interval="1d", auto_adjust=True, progress=False)
 sp500_d = sp500_d_raw[["Close"]].copy()
 sp500_d.index = pd.to_datetime(sp500_d.index)
 sp500_d.columns = ["sp500"]
@@ -54,24 +52,34 @@ sp500_d = sp500_d.dropna()
 
 # ── Download Fama-French 3 Factors ─────────────────────────────────────────────
 print("Downloading Fama-French 3 Factors...")
-# Monthly FF3
-ff3_mo_raw = web.DataReader('F-F_Research_Data_Factors', 'famafrench', start='1995-12-01', end='2025-12-31')[0]
-ff3_mo_raw.index = ff3_mo_raw.index.to_timestamp() # Aligns to 1st of month
+ff3_mo_raw = web.DataReader('F-F_Research_Data_Factors', 'famafrench',
+                            start='1995-12-01', end='2025-12-31')[0]
+ff3_mo_raw.index = ff3_mo_raw.index.to_timestamp()
 
-# Daily FF3
-ff3_d_raw = web.DataReader('F-F_Research_Data_Factors_daily', 'famafrench', start='1995-12-01', end='2025-12-31')[0]
+ff3_d_raw = web.DataReader('F-F_Research_Data_Factors_daily', 'famafrench',
+                           start='1995-12-01', end='2025-12-31')[0]
 ff3_d_raw.index = pd.to_datetime(ff3_d_raw.index)
 
+# ── Load GPR ───────────────────────────────────────────────────────────────────
+print("Loading GPR data...")
+gpr_d = pd.read_excel(GPR_D_PATH)
+gpr_d = gpr_d[['date', 'GPRD']].copy()
+gpr_d['date'] = pd.to_datetime(gpr_d['date'])
+gpr_d = gpr_d.set_index('date').sort_index()
+gpr_d = gpr_d[~gpr_d.index.duplicated(keep='first')]
+
+gpr_mo = gpr_d['GPRD'].resample('MS').mean().rename('GPR')
+
 # ── Merge ──────────────────────────────────────────────────────────────────────
-# Merge Monthly
 df_mo = monthly[["GEP_monthly"]].join(sp500_mo[["sp500", "log_ret"]], how="inner")
 df_mo = df_mo.join(ff3_mo_raw[['Mkt-RF', 'SMB', 'HML']], how="inner")
+df_mo = df_mo.join(gpr_mo, how="left")
 df_mo["gep_pct"]     = df_mo["GEP_monthly"] * 100
 df_mo["cum_log_ret"] = df_mo["log_ret"].cumsum()
 
-# Merge Daily
 df_d = daily[["GEP_daily"]].join(sp500_d[["log_ret"]], how="inner")
 df_d = df_d.join(ff3_d_raw[['Mkt-RF', 'SMB', 'HML']], how="inner")
+df_d = df_d.join(gpr_d[['GPRD']].rename(columns={'GPRD': 'GPR'}), how="left")
 df_d["gep_pct"]     = df_d["GEP_daily"] * 100
 df_d["cum_log_ret"] = df_d["log_ret"].cumsum()
 
@@ -93,11 +101,10 @@ events_d = {
     "2025-04-02": "Liberation\nDay",
 }
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # PLOT 1 — Monthly Z-score overlay
 # ══════════════════════════════════════════════════════════════════════════════
-print("Generating Plots...")
+print("Generating plots...")
 df_z = df_mo.copy()
 df_z["gep_z"]   = (df_z["GEP_monthly"] - df_z["GEP_monthly"].mean()) / df_z["GEP_monthly"].std()
 df_z["sp500_z"] = (df_z["sp500"]       - df_z["sp500"].mean())       / df_z["sp500"].std()
@@ -110,7 +117,6 @@ ax.plot(df_z.index, df_z["sp500_z"], color="#E74C3C", linewidth=1.1,
         label="S&P 500 (Z-score)", zorder=3)
 ax.fill_between(df_z.index, df_z["sp500_z"], alpha=0.08, color="#E74C3C")
 ax.axhline(0, color="#555555", linewidth=0.6, linestyle="--")
-
 for month_str, label in events_mo.items():
     ts = pd.Timestamp(month_str)
     if ts in df_z.index:
@@ -119,7 +125,6 @@ for month_str, label in events_mo.items():
                     xytext=(0, 14), textcoords="offset points",
                     fontsize=7.5, ha="center", color="#333333",
                     arrowprops=dict(arrowstyle="-", color="gray", lw=0.6))
-
 ax.set_title("GEP Robust min-2 vs S&P 500 — Monthly Z-scores (1996–2025)",
              fontsize=13, pad=12)
 ax.set_ylabel("Standard deviations from mean", fontsize=10)
@@ -130,17 +135,14 @@ ax.spines["right"].set_visible(False)
 ax.xaxis.set_major_locator(mdates.YearLocator(2))
 ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 plt.tight_layout()
-out = os.path.join(BASE, "gep_vs_sp500_zscore.png")
-plt.savefig(out, dpi=150, bbox_inches="tight")
+plt.savefig(os.path.join(BASE, "gep_vs_sp500_zscore.png"), dpi=150, bbox_inches="tight")
 plt.close()
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PLOT 2 — Two-panel: GEP monthly level + S&P monthly log returns
 # ══════════════════════════════════════════════════════════════════════════════
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 7), sharex=True,
-                                gridspec_kw={"height_ratios": [1.2, 1], "hspace": 0.08})
-
+                               gridspec_kw={"height_ratios": [1.2, 1], "hspace": 0.08})
 ax1.fill_between(df_mo.index, df_mo["gep_pct"], alpha=0.30, color="#378ADD")
 ax1.plot(df_mo.index, df_mo["gep_pct"], color="#1A5FA8", linewidth=1.1,
          label="GEP Robust min-2 (monthly, %)")
@@ -176,7 +178,6 @@ handles1, labels1 = ax2.get_legend_handles_labels()
 handles2, labels2 = ax2r.get_legend_handles_labels()
 ax2.legend(handles1 + handles2, labels1 + labels2,
            fontsize=10, framealpha=0.7, loc="upper left")
-
 ax2.xaxis.set_major_locator(mdates.YearLocator(2))
 ax2.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 plt.setp(ax2.xaxis.get_majorticklabels(), rotation=0, ha="center")
@@ -190,17 +191,14 @@ for month_str, label in events_mo.items():
                  fontsize=7, ha="center", va="top", color="#444444")
 
 plt.tight_layout()
-out = os.path.join(BASE, "gep_vs_sp500_logret.png")
-plt.savefig(out, dpi=150, bbox_inches="tight")
+plt.savefig(os.path.join(BASE, "gep_vs_sp500_logret.png"), dpi=150, bbox_inches="tight")
 plt.close()
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PLOT 3 — Two-panel: GEP daily level + S&P daily log returns
 # ══════════════════════════════════════════════════════════════════════════════
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 7), sharex=True,
-                                gridspec_kw={"height_ratios": [1.2, 1], "hspace": 0.08})
-
+                               gridspec_kw={"height_ratios": [1.2, 1], "hspace": 0.08})
 ax1.fill_between(df_d.index, df_d["gep_pct"], alpha=0.30, color="#378ADD")
 ax1.plot(df_d.index, df_d["gep_pct"], color="#1A5FA8", linewidth=0.7,
          label="GEP Robust min-2 (daily, %)")
@@ -236,7 +234,6 @@ handles1, labels1 = ax2.get_legend_handles_labels()
 handles2, labels2 = ax2r.get_legend_handles_labels()
 ax2.legend(handles1 + handles2, labels1 + labels2,
            fontsize=10, framealpha=0.7, loc="upper left")
-
 ax2.xaxis.set_major_locator(mdates.YearLocator(2))
 ax2.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 plt.setp(ax2.xaxis.get_majorticklabels(), rotation=0, ha="center")
@@ -255,79 +252,93 @@ for date_str, label in events_d.items():
              fontsize=7, ha="center", va="top", color="#444444", linespacing=1.3)
 
 plt.tight_layout()
-out = os.path.join(BASE, "gep_vs_sp500_logret_daily.png")
-plt.savefig(out, dpi=150, bbox_inches="tight")
+plt.savefig(os.path.join(BASE, "gep_vs_sp500_logret_daily.png"), dpi=150, bbox_inches="tight")
 plt.close()
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 6. REGRESSION ANALYSIS: GEP vs S&P 500 Log Returns (with FF3)
+# REGRESSION ANALYSIS
 # ══════════════════════════════════════════════════════════════════════════════
-print("\n" + "="*70)
-print("REGRESSION ANALYSIS: GEP vs S&P 500 Log Returns (Controlling for FF3)")
-print("="*70)
 
-# --- A. MONTHLY REGRESSIONS ---
-print("\n" + "-"*50)
-print(" PART A: MONTHLY FREQUENCY")
-print("-"*50)
+# ── Lag variables ──────────────────────────────────────────────────────────────
+for df in (df_mo, df_d):
+    for col in ['gep_pct', 'Mkt-RF', 'SMB', 'HML', 'GPR']:
+        df[f'{col}_lag1'] = df[col].shift(1)
 
-# Model 1: Contemporaneous Monthly
-print("\n--- Model 1: Contemporaneous (Same Month) ---")
-X_mo1 = df_mo[['gep_pct', 'Mkt-RF', 'SMB', 'HML']]
-X_mo1 = sm.add_constant(X_mo1)
-y_mo1 = df_mo['log_ret']
+# ── Subsamples ─────────────────────────────────────────────────────────────────
+SUBSAMPLES_MO = {
+    "Full sample (1996–2025)"            : (None,      None),
+    "Pre-GEP era (1996–2017)"            : ("1996-01", "2017-12"),
+    "Trade war (2018–2019)"              : ("2018-01", "2019-12"),
+    "Russia-Ukraine (2022–2023)"         : ("2022-02", "2023-12"),
+    "High-pressure combined (2018–2025)" : ("2018-01", "2025-12"),
+}
+SUBSAMPLES_D = {
+    "Full sample (1996–2025)"            : (None,           None),
+    "Pre-GEP era (1996–2017)"            : ("1996-01-01",   "2017-12-31"),
+    "Trade war (2018–2019)"              : ("2018-01-01",   "2019-12-31"),
+    "Russia-Ukraine (2022–2023)"         : ("2022-02-24",   "2023-12-31"),
+    "High-pressure combined (2018–2025)" : ("2018-01-01",   "2025-12-31"),
+}
 
-mo_model1 = sm.OLS(y_mo1, X_mo1).fit()
-print(mo_model1.summary().tables[1])
-print(f"R-squared: {mo_model1.rsquared:.4f} | p-value (gep_pct): {mo_model1.pvalues['gep_pct']:.4f}")
+def slice_df(df, start, end):
+    d = df.copy()
+    if start: d = d[d.index >= start]
+    if end:   d = d[d.index <= end]
+    return d
 
-# Model 2: Predictive Monthly
-print("\n--- Model 2: Predictive (Lagged 1 Month) ---")
-df_mo['gep_pct_lag1'] = df_mo['gep_pct'].shift(1)
-df_mo['Mkt-RF_lag1']  = df_mo['Mkt-RF'].shift(1)
-df_mo['SMB_lag1']     = df_mo['SMB'].shift(1)
-df_mo['HML_lag1']     = df_mo['HML'].shift(1)
+def run_ols(y, X_cols, data, label, gep_col, hac_lags):
+    clean = data[X_cols + [y]].dropna()
+    if len(clean) < 30:
+        print(f"  {label:<40}  [skipped — N={len(clean)} too small]")
+        return
+    X = sm.add_constant(clean[X_cols])
+    model = sm.OLS(clean[y], X).fit(cov_type='HAC', cov_kwds={'maxlags': hac_lags})
+    coef  = model.params[gep_col]
+    se    = model.bse[gep_col]
+    tstat = model.tvalues[gep_col]
+    pval  = model.pvalues[gep_col]
+    stars = "***" if pval<0.01 else ("**" if pval<0.05 else ("*" if pval<0.10 else "   "))
+    print(f"  {label:<40}  β={coef:+.5f}  SE={se:.5f}  t={tstat:+.2f}  "
+          f"p={pval:.3f} {stars}  R²={model.rsquared:.4f}  N={int(model.nobs)}")
 
-df_mo_clean = df_mo.dropna(subset=['gep_pct_lag1', 'Mkt-RF_lag1', 'SMB_lag1', 'HML_lag1', 'log_ret'])
+# ── MONTHLY ────────────────────────────────────────────────────────────────────
+print("\n" + "="*80)
+print("MONTHLY REGRESSIONS  (HAC Newey-West, 4 lags)")
+print("="*80)
 
-X_mo2 = df_mo_clean[['gep_pct_lag1', 'Mkt-RF_lag1', 'SMB_lag1', 'HML_lag1']]
-X_mo2 = sm.add_constant(X_mo2)
-y_mo2 = df_mo_clean['log_ret']
+print("""
+  [A1] Contemporaneous  log_ret_t ~ GEP_t + GPR_t
+       (bivariate with GPR — FF3 excluded to avoid near-tautology with Mkt-RF)""")
+for name, (s, e) in SUBSAMPLES_MO.items():
+    run_ols('log_ret', ['gep_pct', 'GPR'],
+            slice_df(df_mo, s, e), name, 'gep_pct', hac_lags=4)
 
-mo_model2 = sm.OLS(y_mo2, X_mo2).fit()
-print(mo_model2.summary().tables[1])
-print(f"R-squared: {mo_model2.rsquared:.4f} | p-value (gep_pct_lag1): {mo_model2.pvalues['gep_pct_lag1']:.4f}")
+print("""
+  [A2] Predictive  log_ret_t ~ GEP_{t-1} + FF3_{t-1} + GPR_{t-1}
+       (all regressors lagged — no collinearity issue)""")
+for name, (s, e) in SUBSAMPLES_MO.items():
+    run_ols('log_ret',
+            ['gep_pct_lag1', 'Mkt-RF_lag1', 'SMB_lag1', 'HML_lag1', 'GPR_lag1'],
+            slice_df(df_mo, s, e), name, 'gep_pct_lag1', hac_lags=4)
 
+# ── DAILY ──────────────────────────────────────────────────────────────────────
+print("\n" + "="*80)
+print("DAILY REGRESSIONS  (HAC Newey-West, 10 lags)")
+print("="*80)
 
-# --- B. DAILY REGRESSIONS ---
-print("\n\n" + "-"*50)
-print(" PART B: DAILY FREQUENCY")
-print("-"*50)
+print("""
+  [B1] Contemporaneous  log_ret_t ~ GEP_t + GPR_t
+       (bivariate with GPR — FF3 excluded to avoid near-tautology with Mkt-RF)""")
+for name, (s, e) in SUBSAMPLES_D.items():
+    run_ols('log_ret', ['gep_pct', 'GPR'],
+            slice_df(df_d, s, e), name, 'gep_pct', hac_lags=10)
 
-# Model 3: Contemporaneous Daily
-print("\n--- Model 3: Contemporaneous (Same Day) ---")
-X_d1 = df_d[['gep_pct', 'Mkt-RF', 'SMB', 'HML']]
-X_d1 = sm.add_constant(X_d1)
-y_d1 = df_d['log_ret']
+print("""
+  [B2] Predictive  log_ret_t ~ GEP_{t-1} + FF3_{t-1} + GPR_{t-1}
+       (all regressors lagged — no collinearity issue)""")
+for name, (s, e) in SUBSAMPLES_D.items():
+    run_ols('log_ret',
+            ['gep_pct_lag1', 'Mkt-RF_lag1', 'SMB_lag1', 'HML_lag1', 'GPR_lag1'],
+            slice_df(df_d, s, e), name, 'gep_pct_lag1', hac_lags=10)
 
-d_model1 = sm.OLS(y_d1, X_d1).fit()
-print(d_model1.summary().tables[1])
-print(f"R-squared: {d_model1.rsquared:.4f} | p-value (gep_pct): {d_model1.pvalues['gep_pct']:.4f}")
-
-# Model 4: Predictive Daily
-print("\n--- Model 4: Predictive (Lagged 1 Trading Day) ---")
-df_d['gep_pct_lag1'] = df_d['gep_pct'].shift(1)
-df_d['Mkt-RF_lag1']  = df_d['Mkt-RF'].shift(1)
-df_d['SMB_lag1']     = df_d['SMB'].shift(1)
-df_d['HML_lag1']     = df_d['HML'].shift(1)
-
-df_d_clean = df_d.dropna(subset=['gep_pct_lag1', 'Mkt-RF_lag1', 'SMB_lag1', 'HML_lag1', 'log_ret'])
-
-X_d2 = df_d_clean[['gep_pct_lag1', 'Mkt-RF_lag1', 'SMB_lag1', 'HML_lag1']]
-X_d2 = sm.add_constant(X_d2)
-y_d2 = df_d_clean['log_ret']
-
-d_model2 = sm.OLS(y_d2, X_d2).fit()
-print(d_model2.summary().tables[1])
-print(f"R-squared: {d_model2.rsquared:.4f} | p-value (gep_pct_lag1): {d_model2.pvalues['gep_pct_lag1']:.4f}")
-print("="*70 + "\n")
+print("\n" + "="*80)
