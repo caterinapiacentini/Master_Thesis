@@ -22,11 +22,13 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 # ── Load data ──────────────────────────────────────────────────────────────────
 monthly = pd.read_csv(os.path.join(BASE, "GEP_Monthly_Updated.csv"))
 monthly["month"] = pd.to_datetime(monthly["month"])
-monthly["gep_pct"] = monthly["GEP_monthly"] * 100   # express as %
-
 daily = pd.read_csv(os.path.join(BASE, "GEP_Daily_Updated.csv"), parse_dates=["date"])
 daily_obs = daily[daily["n_articles"] > 0].copy()
-daily_obs["gep_pct"] = daily_obs["GEP_daily"] * 100  # express as %
+
+# ── Normalize to 100 over full sample (avg daily = 100) ───────────────────────
+daily_mean = daily_obs["GEP_daily"].mean()
+daily_obs["gep_norm"] = daily_obs["GEP_daily"] / daily_mean * 100
+monthly["gep_norm"] = monthly["GEP_monthly"] / daily_mean * 100  # same scale
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -51,16 +53,17 @@ PEAKS = {
 
 fig, ax = plt.subplots(figsize=(16, 5))
 
-ax.plot(monthly["month"], monthly["gep_pct"],
+ax.plot(monthly["month"], monthly["gep_norm"],
         color="#378ADD", linewidth=0.9, alpha=0.9)
-ax.fill_between(monthly["month"], monthly["gep_pct"],
+ax.fill_between(monthly["month"], monthly["gep_norm"],
                 alpha=0.15, color="#378ADD")
+ax.axhline(100, color="gray", linewidth=0.6, linestyle="--", alpha=0.6)
 
 for month_str, label in PEAKS.items():
     row = monthly[monthly["month"].dt.strftime("%Y-%m") == month_str]
     if not row.empty:
         x = row["month"].values[0]
-        y = row["gep_pct"].values[0]
+        y = row["gep_norm"].values[0]
         ax.annotate(
             label,
             xy=(x, y),
@@ -72,10 +75,10 @@ for month_str, label in PEAKS.items():
             color="#333333",
         )
 
-ax.set_title("GEP Europe Monthly Index — min=2 (1996–2025)", fontsize=13, pad=12)
+ax.set_title("GEP Europe Monthly Index — min=2, normalized to 100 (1996–2025)", fontsize=13, pad=12)
 ax.set_xlabel("")
-ax.set_ylabel("Share of articles mentioning GEP (%)", fontsize=10)
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.1f%%"))
+ax.set_ylabel("GEP Index (avg = 100)", fontsize=10)
+ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.0f"))
 ax.grid(axis="y", linestyle="--", linewidth=0.5, alpha=0.5)
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
@@ -138,8 +141,8 @@ def find_nearby_peak(date_str, window_days=10):
     sub = daily_obs[(daily_obs["date"] >= lo) & (daily_obs["date"] <= hi)]
     if sub.empty:
         return dt, 0.0
-    idx = sub["gep_pct"].idxmax()
-    return sub.loc[idx, "date"], sub.loc[idx, "gep_pct"]
+    idx = sub["gep_norm"].idxmax()
+    return sub.loc[idx, "date"], sub.loc[idx, "gep_norm"]
 
 
 def spread_label_dates(event_peaks, min_gap_days=38):
@@ -167,19 +170,20 @@ raw_peaks = [
 ]
 spread = spread_label_dates(raw_peaks, min_gap_days=38)
 
-X_DATA_MAX = daily_obs["gep_pct"].quantile(0.999)
+X_DATA_MAX = daily_obs["gep_norm"].quantile(0.999)
 X_LABEL    = X_DATA_MAX * 1.25
 X_MAX      = X_DATA_MAX * 3.8
 
 fig, ax = plt.subplots(figsize=(16, 28))
 
-ax.scatter(daily_obs["gep_pct"], daily_obs["date"],
+ax.scatter(daily_obs["gep_norm"], daily_obs["date"],
            s=28, color="#27AE60", alpha=0.30, linewidths=0, zorder=2,
-           label="Daily GEP share")
+           label="Daily GEP (norm. 100)")
 
-ax.plot(monthly["gep_pct"], monthly["month"],
+ax.plot(monthly["gep_norm"], monthly["month"],
         color="#152F5F", linewidth=1.6, alpha=0.95, zorder=3,
-        label="Monthly GEP share")
+        label="Monthly GEP (norm. 100)")
+ax.axvline(100, color="gray", linewidth=0.6, linestyle="--", alpha=0.6)
 
 for peak_date, peak_score, label, label_date in spread:
     ax.scatter(peak_score, peak_date,
@@ -205,11 +209,11 @@ ax.yaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 ax.tick_params(axis="y", labelsize=9)
 
 ax.set_xlim(0, X_MAX)
-ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{x:.0f}%"))
-ax.set_xlabel("Share of articles mentioning GEP (%)", fontsize=11)
+ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{x:.0f}"))
+ax.set_xlabel("GEP Index (avg = 100)", fontsize=11)
 ax.tick_params(axis="x", labelsize=9)
 
-ax.set_title("GEP Europe Daily Index — min=2 (1996–2025)", fontsize=13, pad=10)
+ax.set_title("GEP Europe Daily Index — min=2, normalized to 100 (1996–2025)", fontsize=13, pad=10)
 ax.grid(axis="x", linestyle="--", linewidth=0.4, alpha=0.35)
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
