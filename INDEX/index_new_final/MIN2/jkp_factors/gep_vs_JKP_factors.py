@@ -97,11 +97,11 @@ factors_d = load_factors(FACTORS_DAILY_PATH,   freq="daily")
 factors_m = load_factors(FACTORS_MONTHLY_PATH, freq="monthly")
 
 # ── 2. Load GEP ───────────────────────────────────────────────────────────────
-daily_gep = pd.read_csv(os.path.join(GEP_BASE, "GEP_Daily_Robust_min2.csv"))
+daily_gep = pd.read_csv(os.path.join(GEP_BASE, "data", "GEP_Daily_Robust_min2.csv"))
 daily_gep["date"] = pd.to_datetime(daily_gep["date"])
 daily_gep = daily_gep.set_index("date").sort_index()
 
-monthly_gep = pd.read_csv(os.path.join(GEP_BASE, "GEP_Monthly_Robust_min2.csv"))
+monthly_gep = pd.read_csv(os.path.join(GEP_BASE, "data", "GEP_Monthly_Robust_min2.csv"))
 monthly_gep["month"] = pd.to_datetime(monthly_gep["month"])
 monthly_gep = monthly_gep.set_index("month").sort_index()
 

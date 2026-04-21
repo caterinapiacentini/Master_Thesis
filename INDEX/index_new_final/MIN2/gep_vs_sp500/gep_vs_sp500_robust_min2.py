@@ -21,11 +21,11 @@ GPR_D_PATH  = "/Users/catepiacentini/Desktop/tesi/literature/data_gpr_daily_rece
 GPR_MO_PATH = "/Users/catepiacentini/Desktop/tesi/literature/data_gpr_export.xls"
 
 # ── Load GEP data ──────────────────────────────────────────────────────────────
-monthly = pd.read_csv(os.path.join(BASE, "GEP_Monthly_Robust_min2.csv"))
+monthly = pd.read_csv(os.path.join(BASE, "data", "GEP_Monthly_Robust_min2.csv"))
 monthly["month"] = pd.to_datetime(monthly["month"])
 monthly = monthly.set_index("month").sort_index()
 
-daily = pd.read_csv(os.path.join(BASE, "GEP_Daily_Robust_min2.csv"))
+daily = pd.read_csv(os.path.join(BASE, "data", "GEP_Daily_Robust_min2.csv"))
 daily["date"] = pd.to_datetime(daily["date"])
 daily = daily.set_index("date").sort_index()
 daily = daily[daily["n_articles"] > 0]

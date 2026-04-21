@@ -11,11 +11,11 @@ import matplotlib.patches as mpatches
 GEP_BASE = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_new_final/MIN2"
 
 # ── 1. Load GEP Index ──────────────────────────────────────────────────────────
-daily_gep = pd.read_csv(os.path.join(GEP_BASE, "GEP_Daily_Robust_min2.csv"))
+daily_gep = pd.read_csv(os.path.join(GEP_BASE, "data", "GEP_Daily_Robust_min2.csv"))
 daily_gep["date"] = pd.to_datetime(daily_gep["date"])
 daily_gep = daily_gep.set_index("date").sort_index()
 
-monthly_gep = pd.read_csv(os.path.join(GEP_BASE, "GEP_Monthly_Robust_min2.csv"))
+monthly_gep = pd.read_csv(os.path.join(GEP_BASE, "data", "GEP_Monthly_Robust_min2.csv"))
 monthly_gep["month"] = pd.to_datetime(monthly_gep["month"])
 monthly_gep = monthly_gep.set_index("month").sort_index()
 

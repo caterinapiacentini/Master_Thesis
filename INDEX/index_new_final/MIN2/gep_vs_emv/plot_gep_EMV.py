@@ -15,7 +15,7 @@ import matplotlib.dates as mdates
 
 # ── File Paths ─────────────────────────────────────────────────────────────────
 EMV_PATH = "/Users/catepiacentini/Desktop/tesi/literature/EMV_Data.xlsx"
-GEP_PATH = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_new_final/MIN2/GEP_Monthly_Robust_min2.csv"
+GEP_PATH = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_new_final/MIN2/data/GEP_Monthly_Robust_min2.csv"
 OUT_PATH = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_new_final/MIN2/Comparison_GEP_vs_EMV.png"
 
 # ── 1. Load and Prepare EMV Data ───────────────────────────────────────────────

@@ -55,7 +55,7 @@ gpr_raw["date"] = pd.to_datetime(gpr_raw["date"]).dt.normalize()
 gpr_raw = gpr_raw[gpr_raw["date"] >= "1996-01-01"]
 
 gep_raw = pd.read_csv(
-    os.path.join(BASE, "GEP_Daily_Robust_min2.csv"), parse_dates=["date"]
+    os.path.join(BASE, "data", "GEP_Daily_Robust_min2.csv"), parse_dates=["date"]
 )
 gep_raw = gep_raw[gep_raw["date"] >= "1996-01-01"]
 gep_raw = (

@@ -13,7 +13,7 @@ import statsmodels.api as sm
 import pandas_datareader.data as web
 
 # ── File Paths ─────────────────────────────────────────────────────────────────
-GEP_PATH    = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_new_final/MIN2/GEP_Monthly_Robust_min2.csv"
+GEP_PATH    = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_new_final/MIN2/data/GEP_Monthly_Robust_min2.csv"
 OUT_PATH    = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_new_final/MIN2/Comparison_GEP_vs_VIX.png"
 GPR_D_PATH  = "/Users/catepiacentini/Desktop/tesi/literature/data_gpr_daily_recent.xls"
 
