@@ -18,8 +18,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.dates as mdates
 
-BASE     = os.path.dirname(os.path.abspath(__file__))
-ROB_DIR  = os.path.join(BASE, "..", "data")
+BASE     = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/INDEX/index_new_final/INDEX_50"
+ROB_DIR  = os.path.join(BASE, "data")
 
 # ── Load data ──────────────────────────────────────────────────────────────────
 monthly = pd.read_csv(os.path.join(ROB_DIR, "GEP_Monthly_Robust_min2.csv"))
