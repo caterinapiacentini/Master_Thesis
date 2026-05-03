@@ -252,9 +252,12 @@ TARIFF_2025 = [
     ("2025-09-25", "US introduces new pharma tariffs"),
     
     # --- Q4 2025 ---
-    ("2025-10-14", "US threatens China tariffs over rare earths"),
-    ("2025-10-27", "US raises tariffs on Canadian goods"),
-    ("2025-10-29", "US-China temporary trade truce"),
+    ("2025-10-09", "China export controls: rare earths, lithium, graphite"),
+    ("2025-10-10", "Trump retaliatory tariffs on China"),
+    ("2025-10-23", "US sanctions Rosneft & Lukoil"),
+    ("2025-10-25", "US–China de-escalation talks, Malaysia"),
+    ("2025-11-03", "Supreme Court upholds Trump tariffs"),
+    ("2025-12-12", "US–UK zero-tariff pharma deal"),
 ]
 
 daily_2025 = daily_obs[
