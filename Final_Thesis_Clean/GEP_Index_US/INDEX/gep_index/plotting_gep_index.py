@@ -21,10 +21,10 @@ import matplotlib.dates as mdates
 BASE     = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/Final_Thesis_Clean/GEP_Index_US/INDEX"
 
 # ── Load data ──────────────────────────────────────────────────────────────────
-monthly = pd.read_csv(os.path.join(BASE, "GEP_Monthly_Robust_min2.csv"))
+monthly = pd.read_csv(os.path.join(BASE, "data", "GEP_Monthly_Robust_min2.csv"))
 monthly["month"] = pd.to_datetime(monthly["month"])
 
-daily = pd.read_csv(os.path.join(BASE, "GEP_Daily_Robust_min2.csv"))
+daily = pd.read_csv(os.path.join(BASE, "data", "GEP_Daily_Robust_min2.csv"))
 daily["date"] = pd.to_datetime(daily["date"])
 
 # ── Normalize to 100 over full sample (1996–2025) ─────────────────────────────
@@ -226,3 +226,86 @@ out = os.path.join(BASE, "GEP_Daily_Robust_min2_norm100.png")
 plt.savefig(out, dpi=160, bbox_inches="tight")
 print(f"Saved: {out}")
 plt.close()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PLOT 3 — 2025 zoom: daily GEP with Trump tariff announcements
+# ══════════════════════════════════════════════════════════════════════════════
+TARIFF_2025 = [
+    # --- Q1 2025 ---
+    ("2025-01-19", "US threatens tariffs on EU over Greenland"),
+    ("2025-01-20", "Trump inauguration"),
+    ("2025-02-01", "25% tariffs on Canada & Mexico announced"),
+    ("2025-02-10", "Section 232 steel & aluminum reinstated"),
+    ("2025-03-04", "Canada/Mexico tariffs take effect"),
+    
+    # --- Q2 2025 ---
+    ("2025-04-02", "Liberation Day tariffs"),
+    ("2025-04-09", "90-day pause; China raised to 145%"),
+    ("2025-05-12", "US-China Geneva truce; tariffs cut to 30%"),
+    ("2025-05-23", "Trump threatens 50% tariffs on EU"),
+    ("2025-06-05", "US/Israel strike Iran nuclear facilities (Oil spike)"), 
+    
+    # --- Q3 2025 ---
+    ("2025-07-09", "Liberation Day pause expires"),
+    ("2025-08-07", "10-41% broad US tariffs take effect globally"),
+    ("2025-09-25", "US introduces new pharma tariffs"),
+    
+    # --- Q4 2025 ---
+    ("2025-10-14", "US threatens China tariffs over rare earths"),
+    ("2025-10-27", "US raises tariffs on Canadian goods"),
+    ("2025-10-29", "US-China temporary trade truce"),
+]
+
+daily_2025 = daily_obs[
+    (daily_obs["date"] >= "2025-01-01") & (daily_obs["date"] <= "2025-12-31")
+].copy()
+
+fig, ax = plt.subplots(figsize=(18, 6))
+
+ax.scatter(daily_2025["date"], daily_2025["gep_norm"],
+           s=22, color="#27AE60", alpha=0.45, linewidths=0, zorder=2,
+           label="Daily GEP (norm. 100)")
+
+if not daily_2025.empty:
+    roll = daily_2025.set_index("date")["gep_norm"].rolling("7D").mean()
+    ax.plot(roll.index, roll.values,
+            color="#1A6B3C", linewidth=1.8, alpha=0.85, zorder=3,
+            label="7-day rolling avg")
+
+ax.axhline(100, color="gray", linewidth=0.7, linestyle="--", alpha=0.6)
+
+y_fracs = [0.97, 0.88, 0.97, 0.88, 0.97, 0.88, 0.97, 0.88, 0.97]
+for i, (date_str, label) in enumerate(TARIFF_2025):
+    dt = pd.to_datetime(date_str)
+    ax.axvline(dt, color="#C0392B", linewidth=0.9, linestyle="--", alpha=0.5, zorder=1)
+    ax.text(
+        dt, y_fracs[i % len(y_fracs)], label,
+        transform=ax.get_xaxis_transform(),
+        fontsize=7.5,
+        ha="center",
+        va="top",
+        color="#8B0000",
+        rotation=90,
+        bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.7),
+    )
+
+ax.set_xlim(pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-31"))
+ax.xaxis.set_major_locator(mdates.MonthLocator())
+ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+ax.tick_params(axis="x", labelsize=9)
+
+ax.set_ylabel("GEP Index (avg = 100)", fontsize=10)
+ax.set_title("Daily GEP Index — 2025 Zoom", fontsize=13, pad=12)
+ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.0f"))
+ax.grid(axis="y", linestyle="--", linewidth=0.5, alpha=0.4)
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.legend(fontsize=9, framealpha=0.75, loc="upper left")
+
+plt.tight_layout()
+out = os.path.join(BASE, "gep_index", "GEP_Daily_2025_Zoom_norm100.png")
+plt.savefig(out, dpi=160, bbox_inches="tight")
+print(f"Saved: {out}")
+plt.close()
+
