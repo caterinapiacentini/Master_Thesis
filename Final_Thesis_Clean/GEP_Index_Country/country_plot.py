@@ -84,7 +84,7 @@ for ax, country in zip(axes, COUNTRIES):
 
     print(f"{country['title']}: max={df['GEP_norm'].max():.1f}, mean={df['GEP_norm'].mean():.1f}")
 
-    ax.plot(df["date"], df["GEP_norm"], color="#1a3a6b", linewidth=0.9)
+    ax.plot(df["date"], df["GEP_norm"], color="#2b7bba", linewidth=2.1)
 
     y_max = df["GEP_norm"].max()
 
