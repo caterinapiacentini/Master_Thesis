@@ -1,6 +1,6 @@
 """
-Plot GEP Monthly Index – Japan, US, UK (1996–2025)
-3 panels side by side, normalized to 100 (mean = 100).
+Plot GEP Monthly Index – Japan, US, UK, Russia, Iran, China (1996–2025)
+3x2 grid, normalized to 100 (mean = 100).
 Style inspired by Caldara & Iacoviello (2022), Figure 6.
 """
 
@@ -12,7 +12,7 @@ import os
 
 # ── CONFIG ──────────────────────────────────────────────────────────────────
 BASE_DIR   = "/Users/catepiacentini/Desktop/tesi/Master_Thesis/Final_Thesis_Clean/GEP_Index_Country"
-OUTPUT_PNG = os.path.join(BASE_DIR, "GEP_Japan_US_UK_1996_2025.png")
+OUTPUT_PNG = os.path.join(BASE_DIR, "GEP_6Countries_1996_2025.png")
 
 START = "1996-01-01"
 END   = "2025-12-31"
@@ -68,12 +68,59 @@ COUNTRIES = [
             ("Ukraine\nInvasion","2022-02-01", 0.10),
         ],
     },
+    {
+        "title":  "GEP Russia",
+        "folder": "Russia",
+        "file":   "GEP_Monthly_RUSSIA_min2.csv",
+        "events": [
+            ("Kosovo\nNATO",      "1999-03-01", 0.08),
+            ("9/11",              "2001-09-01", 0.08),
+            ("Iraq War",          "2003-03-01", 0.08),
+            ("Georgia\nWar",      "2008-08-01", 0.10),
+            ("Crimea\nAnnexation","2014-03-01", 0.10),
+            ("Syria\nIntervention","2015-09-01",0.08),
+            ("US-China\nTrade",   "2018-07-01", 0.08),
+            ("COVID-19",          "2020-03-01", 0.08),
+            ("Ukraine\nInvasion", "2022-02-01", 0.12),
+        ],
+    },
+    {
+        "title":  "GEP Iran",
+        "folder": "Iran",
+        "file":   "GEP_Monthly_IRAN_min2.csv",
+        "events": [
+            ("9/11",             "2001-09-01", 0.08),
+            ("Iraq War",         "2003-03-01", 0.08),
+            ("Nuclear\nCrisis",  "2006-01-01", 0.08),
+            ("JCPOA\nSigning",   "2015-07-01", 0.08),
+            ("JCPOA\nWithdrawal","2018-05-01", 0.10),
+            ("Soleimani",        "2020-01-01", 0.10),
+            ("COVID-19",         "2020-03-01", 0.08),
+            ("Ukraine\nInvasion","2022-02-01", 0.08),
+        ],
+    },
+    {
+        "title":  "GEP China",
+        "folder": "China",
+        "file":   "GEP_Monthly_CHINA_min2.csv",
+        "events": [
+            ("Asian Crisis",     "1997-07-01", 0.08),
+            ("9/11",             "2001-09-01", 0.08),
+            ("Iraq War",         "2003-03-01", 0.08),
+            ("GFC",              "2008-09-01", 0.08),
+            ("S.China Sea",      "2012-07-01", 0.08),
+            ("US-China\nTrade",  "2018-07-01", 0.10),
+            ("COVID-19",         "2020-03-01", 0.08),
+            ("Ukraine\nInvasion","2022-02-01", 0.08),
+            ("Export\nControls", "2023-07-01", 0.08),
+        ],
+    },
 ]
 
 # ── PLOT ─────────────────────────────────────────────────────────────────────
-fig, axes = plt.subplots(1, 3, figsize=(18, 4), dpi=150)
+fig, axes = plt.subplots(2, 3, figsize=(18, 8), dpi=150)
 
-for ax, country in zip(axes, COUNTRIES):
+for ax, country in zip(axes.flatten(), COUNTRIES):
     file_path = os.path.join(BASE_DIR, country["folder"], country["file"])
     df = pd.read_csv(file_path)
 
