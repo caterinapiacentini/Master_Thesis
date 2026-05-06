@@ -1,5 +1,5 @@
 """
-Plot GEP Monthly Index – Japan, US, UK, Russia, Iran, China (1996–2025)
+Plot GEP Monthly Index – Japan, UK, Germany, Russia, Iran, China (1996–2025)
 3x2 grid, normalized to 100 (mean = 100).
 Style inspired by Caldara & Iacoviello (2022), Figure 6.
 """
@@ -38,22 +38,6 @@ COUNTRIES = [
         ],
     },
     {
-        "title":  "GEP United States",
-        "folder": "US",
-        "file":   "GEP_Monthly_US_min2.csv",
-        "events": [
-            ("Asian Crisis",     "1997-07-01", 0.08),
-            ("9/11",             "2001-09-01", 0.10),
-            ("Iraq War",         "2003-03-01", 0.08),
-            ("GFC",              "2008-09-01", 0.08),
-            ("N.Korea\nNuclears","2013-02-01", 0.08),
-            ("US-China\nTrade",  "2018-07-01", 0.08),
-            ("COVID-19",         "2020-03-01", 0.08),
-            ("Ukraine\nInvasion","2022-02-01", 0.10),
-            ("Export\nControls", "2023-07-01", 0.08),
-        ],
-    },
-    {
         "title":  "GEP United Kingdom",
         "folder": "UK",
         "file":   "GEP_Monthly_UK_min2.csv",
@@ -62,6 +46,22 @@ COUNTRIES = [
             ("9/11",             "2001-09-01", 0.10),
             ("Iraq War",         "2003-03-01", 0.08),
             ("GFC",              "2008-09-01", 0.08),
+            ("Brexit\nVote",     "2016-06-01", 0.08),
+            ("US-China\nTrade",  "2018-07-01", 0.08),
+            ("COVID-19",         "2020-03-01", 0.08),
+            ("Ukraine\nInvasion","2022-02-01", 0.10),
+        ],
+    },
+    {
+        "title":  "GEP Germany",
+        "folder": "Germany",
+        "file":   "GEP_Monthly_GERMANY_min2.csv",
+        "events": [
+            ("Asian Crisis",     "1997-07-01", 0.08),
+            ("9/11",             "2001-09-01", 0.10),
+            ("Iraq War",         "2003-03-01", 0.08),
+            ("GFC",              "2008-09-01", 0.08),
+            ("Eurozone\nCrisis", "2010-05-01", 0.10),
             ("Brexit\nVote",     "2016-06-01", 0.08),
             ("US-China\nTrade",  "2018-07-01", 0.08),
             ("COVID-19",         "2020-03-01", 0.08),
