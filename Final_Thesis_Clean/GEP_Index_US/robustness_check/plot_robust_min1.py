@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-plot_robust_min2_normalized.py
+plot_robust_min1_normalized.py
 
-Plots the robust min-2 GEP index normalized to 100 over 1996-2025,
+Plots the robust min-1 GEP index normalized to 100 over 1996-2025,
 following Caldara & Iacoviello (2022) convention.
 
 Produces:
-  1. GEP_Monthly_Robust_min2_norm100.png
-  2. GEP_Daily_Robust_min2_norm100.png
+  1. GEP_Monthly_Robust_min1_norm100.png
+  2. GEP_Daily_Robust_min1_norm100.png
   3. GEP_Daily_2025_Zoom_norm100.png
 """
 
@@ -84,7 +84,7 @@ for month_str, label in PEAKS.items():
             color="#333333",
         )
 
-ax.set_title("GEP Monthly Index — Robust min-2, normalized to 100 (1996–2025)", fontsize=13, pad=12)
+ax.set_title("GEP Monthly Index — Robust min-1, normalized to 100 (1996–2025)", fontsize=13, pad=12)
 ax.set_xlabel("")
 ax.set_ylabel("GEP Index (avg = 100)", fontsize=10)
 ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.0f"))
@@ -93,7 +93,7 @@ ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 
 plt.tight_layout()
-out = os.path.join(BASE, "GEP_Monthly_Robust_min2_norm100.png")
+out = os.path.join(BASE, "GEP_Monthly_Robust_min1_norm100.png")
 plt.savefig(out, dpi=150, bbox_inches="tight")
 print(f"Saved: {out}")
 plt.close()
@@ -217,14 +217,14 @@ ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{x:.0f}"))
 ax.set_xlabel("GEP Index (avg = 100)", fontsize=11)
 ax.tick_params(axis="x", labelsize=9)
 
-ax.set_title("Daily GEP Index — Robust min-2, normalized to 100 (1996–2025)", fontsize=13, pad=10)
+ax.set_title("Daily GEP Index — Robust min-1, normalized to 100 (1996–2025)", fontsize=13, pad=10)
 ax.grid(axis="x", linestyle="--", linewidth=0.4, alpha=0.35)
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 ax.legend(fontsize=9, framealpha=0.7, loc="lower right")
 
 plt.tight_layout()
-out = os.path.join(BASE, "GEP_Daily_Robust_min2_norm100.png")
+out = os.path.join(BASE, "GEP_Daily_Robust_min1_norm100.png")
 plt.savefig(out, dpi=160, bbox_inches="tight")
 print(f"Saved: {out}")
 plt.close()
