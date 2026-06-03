@@ -1,1 +1,3 @@
 .DS_Store
+data/external/[usa]_[all_factors]_*.csv
+data/external/\[usa\]_\[all_factors\]_*.csv
