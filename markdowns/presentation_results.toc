@@ -1,5 +1,0 @@
-\beamer@sectionintoc {1}{GTM-6 — Final Topic Model}{3}{0}{1}
-\beamer@sectionintoc {2}{MIN2 Index — Construction}{7}{0}{2}
-\beamer@sectionintoc {3}{Index Plots \& Validation}{9}{0}{3}
-\beamer@sectionintoc {4}{Return Predictability Regressions}{13}{0}{4}
-\beamer@sectionintoc {5}{Summary}{18}{0}{5}
