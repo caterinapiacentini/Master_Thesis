@@ -34,9 +34,13 @@ from statsmodels.tsa.stattools import adfuller
 
 warnings.filterwarnings("ignore")
 
-HERE = Path(__file__).parent
-DATA = HERE.parent / "data" / "gep_us"
-OUT  = HERE / "output" / "index"
+try:
+    HERE = Path(__file__).parent
+except NameError:
+    HERE = Path.cwd()
+REPO = next((p for p in [HERE, *HERE.parents] if (p / "data" / "gep_us").exists()), HERE.parent)
+DATA = REPO / "data" / "gep_us"
+OUT  = REPO / "analysis" / "output" / "index"
 OUT.mkdir(parents=True, exist_ok=True)
 
 # ─────────────────────────────────────────────────────────────────────────────

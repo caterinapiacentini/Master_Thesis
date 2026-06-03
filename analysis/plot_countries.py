@@ -30,9 +30,13 @@ import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
 from pathlib import Path
 
-HERE = Path(__file__).parent
-CTRY = HERE.parent / "data" / "countries"
-OUT  = HERE / "output" / "countries"
+try:
+    HERE = Path(__file__).parent
+except NameError:
+    HERE = Path.cwd()
+REPO = next((p for p in [HERE, *HERE.parents] if (p / "data" / "gep_us").exists()), HERE.parent)
+CTRY = REPO / "data" / "countries"
+OUT  = REPO / "analysis" / "output" / "countries"
 OUT.mkdir(parents=True, exist_ok=True)
 
 START = "1996-01-01"

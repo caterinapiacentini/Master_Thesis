@@ -34,10 +34,14 @@ from scipy import stats
 
 warnings.filterwarnings("ignore")
 
-HERE   = Path(__file__).parent
-GEP    = HERE.parent / "data" / "gep_us"
-ROBUST = HERE.parent / "data" / "robustness"
-OUT    = HERE / "output" / "robustness"
+try:
+    HERE = Path(__file__).parent
+except NameError:
+    HERE = Path.cwd()
+REPO   = next((p for p in [HERE, *HERE.parents] if (p / "data" / "gep_us").exists()), HERE.parent)
+GEP    = REPO / "data" / "gep_us"
+ROBUST = REPO / "data" / "robustness"
+OUT    = REPO / "analysis" / "output" / "robustness"
 OUT.mkdir(parents=True, exist_ok=True)
 
 PEAKS = {

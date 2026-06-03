@@ -37,11 +37,15 @@ from pathlib import Path
 
 warnings.filterwarnings("ignore")
 
-HERE = Path(__file__).parent
-DATA = HERE.parent / "data"
+try:
+    HERE = Path(__file__).parent
+except NameError:
+    HERE = Path.cwd()
+REPO = next((p for p in [HERE, *HERE.parents] if (p / "data" / "gep_us").exists()), HERE.parent)
+DATA = REPO / "data"
 GEP  = DATA / "gep_us"
 EXT  = DATA / "external"
-OUT  = HERE / "output" / "industries"
+OUT  = REPO / "analysis" / "output" / "industries"
 OUT.mkdir(parents=True, exist_ok=True)
 
 GPR_RECENT = EXT / "data_gpr_daily_recent.xls"
