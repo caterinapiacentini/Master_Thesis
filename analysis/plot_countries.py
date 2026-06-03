@@ -31,7 +31,7 @@ import matplotlib.ticker as ticker
 from pathlib import Path
 
 HERE = Path(__file__).parent
-CTRY = HERE / "data" / "countries"
+CTRY = HERE.parent / "data" / "countries"
 OUT  = HERE / "output" / "countries"
 OUT.mkdir(parents=True, exist_ok=True)
 

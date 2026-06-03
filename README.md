@@ -6,182 +6,9 @@
 
 ## Overview
 
-This thesis constructs a novel **Geoeconomic Pressure (GEP) Index** from Reuters newswire text (1996–2025) using a fully data-driven NLP pipeline. The index quantifies the monthly share of news coverage devoted to geoeconomic stress — trade coercion, sanctions, export controls, financial coercion, retaliation, and embargoes — and is used to study its impact on the S&P 500.
+This thesis constructs a novel **Geoeconomic Pressure (GEP) Index** from Reuters newswire text (1996–2025) using a fully data-driven NLP pipeline. The index quantifies the monthly share of news coverage devoted to geoeconomic stress — trade coercion, sanctions, export controls, financial coercion, retaliation, and embargoes — and is used to study its impact on financial markets.
 
 The methodology follows and extends Dangl & Salbrechter (2023), combining **Word2Vec embeddings**, **Guided Topic Modeling (GTM)**, and a **threshold-based article classification** approach.
-
-**Final deliverables:** GTM-6 new final topic model (`GTM_different_versions/GTM_new_final_results/`) and the MIN2 robust index (`INDEX/index_new_final/MIN2/`).
-
----
-
-## Pipeline
-
-### Step 1 — Data & Cleaning
-
-**Corpus:** Reuters newswire articles (1996–2025), stored as yearly compressed files.
-
-The cleaning pipeline (`scripts/cleaning/Cleaning_All_US.py`) preprocesses the raw corpus:
-- Lowercasing and punctuation removal
-- Boilerplate and diary entry removal
-- Bigram detection and concatenation (e.g. `trade_war`, `economic_sanctions`)
-- Output: one cleaned `.txt.gz` per year, one article per line
-
----
-
-### Step 2 — Word2Vec Training
-
-**Script:** `scripts/training/word2vec & GTM/train_w2v_all.py`
-
-A Word2Vec model is trained on the full cleaned corpus (1996–2025) using the **CBOW** architecture:
-
-| Hyperparameter | Value |
-|---|---|
-| Architecture | CBOW (`sg=0`) |
-| Embedding dimension | 64 |
-| Context window | 18 |
-| Min word count | 20 |
-| Negative samples | 10 |
-| Training epochs | 50 |
-
-**Output model:** `w2v_cbow_64_window_18_50_epochs_1996_2025.pkl`
-
----
-
-### Step 3 — Guided Topic Modeling (GTM-6, New Final)
-
-**Script:** `scripts/training/word2vec & GTM/GTM_8.py`
-**Output:** `GTM_different_versions/GTM_new_final_results/`
-
-The GTM algorithm iteratively expands six geoeconomic sub-topics from seed words in the 64-dimensional embedding space. The final model consolidates the previous 8-topic structure into **6 sharper, better-separated topics** by merging Trade War, Tariffs, and Protectionism into a single **Trade Coercion** dimension.
-
-**GTM hyperparameters:**
-
-| Parameter | Value |
-|---|---|
-| `cluster_size` | 100 words per topic |
-| `gravity` | 1.5 |
-| `alpha_max` | 2.0 rad |
-| `k-similar` | 5,000 (FAISS) |
-
-#### The 6 Geoeconomic Sub-Topics (New Final)
-
-| # | Topic | Positive seeds | Negative seeds |
-|---|---|---|---|
-| 1 | **Sanctions** | `economic_sanctions`, `targeted_sanctions` | `sanctions_relief`, `sanctions_waiver` |
-| 2 | **Trade Coercion** | `trade_war`, `retaliatory_tariffs` | `trade_deal`, `trade_pact` |
-| 3 | **Export Controls** | `export_ban`, `entity_list` | `export_license`, `export_licenses` |
-| 4 | **Financial Coercion** | `asset_freeze`, `secondary_sanctions` | `debt_relief` |
-| 5 | **Retaliation** | `retaliation`, `countermeasures` | `concessions`, `goodwill_gesture` |
-| 6 | **Embargo** | `trade_embargo`, `oil_embargo` | `lift_embargo`, `lifting_sanctions` |
-
-**Key change from previous version:** Trade War, Tariffs, and Protectionism are consolidated into *Trade Coercion* (`trade_war` + `retaliatory_tariffs` as seeds). This produces a cleaner, more coherent topic that captures the full spectrum of coercive trade pressure without fragmentation.
-
-**Output per topic:** `topic_<Name>.csv` (ranked word list with GTM weights), word cloud PNG, log file.
-Combined word cloud grid: `Combined_GEP_Grid_6.png`
-
----
-
-### Step 4 — Dictionary Construction
-
-**Script:** `scripts/training/dict & score/build_dictionary_8.py`
-
-The 6 topic CSVs are consolidated into a single **geoeconomic dictionary** using local normalization per topic followed by global averaging across Q=6 topics (Dangl & Salbrechter 2023, Eq. 10):
-
-$$w_{\text{global}}(v) = \frac{1}{Q} \sum_{q=1}^{Q} \tilde{w}_q(v)$$
-
-Words appearing across multiple sub-topics receive proportionally higher weight, reflecting cross-dimensional geoeconomic relevance.
-
-**Output:** `DICTIONARY/geoeconomic_dictionary_new.csv`
-
----
-
-### Step 5 — GEP Index: MIN-K Threshold Construction (New Final)
-
-**Script:** `scripts/training/dict_score/score_daily_index_new.py`
-
-#### Construction logic
-
-The new index departs from the score-averaging approach of earlier versions. Instead of computing a continuous weighted score per article, the index measures the **share of daily news coverage explicitly devoted to geoeconomic pressure**:
-
-$$\text{GEP}_m = \frac{n_{\text{GEP articles},\, m}}{n_{\text{articles},\, m}}$$
-
-where an article is classified as a **GEP article** if it contains at least $K$ dictionary keywords:
-
-$$\mathbf{1}[\text{GEP article}_i] = \mathbf{1}\!\left[\sum_{w \in V} \mathbf{1}[w \in \text{article}_i] \geq K\right]$$
-
-#### Why this construction
-
-| Property | Score-based (old) | MIN-K threshold (new) |
-|---|---|---|
-| Scale | Raw weighted freq (~10⁻⁴) | Proportion (0–1), interpretable |
-| Stationarity | Non-stationary in levels; requires differencing | **Stationary in levels** (bounded ratio) |
-| Robustness | Sensitive to high-frequency words | Threshold filters noise; requires co-occurrence |
-| Regression use | Must use ΔGEP_z | Can use GEP_z directly in levels |
-
-Because the MIN-K index is bounded in [0, 1] by construction, it cannot drift — confirmed by ADF tests. This allows using **GEP_z (levels) directly** as a regressor, preserving the economically meaningful intensity signal.
-
-#### Robustness across thresholds
-
-| Variant | Threshold K | Interpretation |
-|---|---|---|
-| MIN1 | ≥ 1 keyword | Broadest — any mention of a GEP word |
-| **MIN2** | **≥ 2 keywords** | **Baseline (final)** — co-occurrence required |
-| MIN3 | ≥ 3 keywords | Stricter — article must be substantially GEP-focused |
-| MIN4 | ≥ 4 keywords | Most conservative |
-
-**Final index: MIN2** (`INDEX/index_new_final/MIN2/`). Robustness variants in `INDEX/index_new_final/robustness/`.
-
-**Output files:**
-- `GEP_Daily_Robust_min2.csv` — daily GEP proportion (1996–2025)
-- `GEP_Monthly_Robust_min2.csv` — monthly GEP proportion
-
----
-
-## GEP vs GPR: Comparison & Validation
-
-**Script:** `INDEX/index_new_final/MIN2/gep_vs_gpr_robust_min2.py`
-
-The MIN2 GEP index is compared against the **Geopolitical Risk (GPR) index** of Caldara & Iacoviello (2022). Both series are z-scored before comparison.
-
-The low but positive correlation confirms GEP and GPR measure **related but distinct phenomena**: GEP captures geoeconomic coercion (trade pressure, sanctions, financial weaponisation) while GPR captures geopolitical threat and military risk.
-
-![GEP vs GPR Time Series](INDEX/index_new_final/MIN2/gep_vs_gprd_timeseries.png)
-![GEP vs GPR Cross-Correlation](INDEX/index_new_final/MIN2/gep_vs_gprd_crosscorr.png)
-
----
-
-## Return Predictability Regressions
-
-**Script:** `INDEX/index_new_final/MIN2/return_predictability_min2.R`
-
-Monthly and quarterly OLS regressions of S&P 500 log returns on the MIN2 GEP index (z-scored levels), with Newey-West HAC standard errors. Four model specifications:
-
-| Spec | Formula |
-|---|---|
-| m1 | `log_ret ~ GEP_z` |
-| m2 | `log_ret ~ GEP_z + GPR_z` |
-| m3 | `log_ret ~ GEP_z + GPR_z + MktRF + SMB + HML` |
-| m4 | `log_ret ~ GEP_z + GEP_z_lag1 + GPR_z + GPR_z_lag1 + MktRF + SMB + HML` |
-
-Run at **h=0** (contemporaneous) and **h=1** (next-period predictability), across the full sample and five subperiods.
-
-### Key findings
-
-**1. GEP is a contemporaneous indicator, not a predictor.** Results at h=1 are uniformly insignificant across all specifications and periods. GEP reflects market reactions to geopolitical events, not a leading signal.
-
-**2. The sign of the GEP effect flips across regimes:**
-
-| Period | Effect on returns | Interpretation |
-|---|---|---|
-| Pre-GFC (1996–2007) | Negative\* (m1: −0.009, m_rob: −0.017) | Geo news hurts markets contemporaneously |
-| Post-GFC (2012–2021) | Positive\*\* conditional on FF3 (+0.0008) | Geopolitical risk premium — high GEP months earn more |
-| Russia–Ukraine (2022–2023) | Negative\* (m2: −0.047) | Return to fear-driven reaction |
-
-**3. GEP and GPR are complementary.** In Post-GFC, GPR_z loads *negatively* (−0.013\*) while GEP_z loads *positively* (+0.0008\*\*) after controlling for FF3. The two indices capture distinct asset pricing channels.
-
-**4. No full-sample significance without factor controls.** In m1/m2, GEP_z is not significant in the full sample — the effect is regime-dependent and emerges only when market beta is controlled for.
-
-**5. Quarterly results confirm monthly.** Pre-GFC quarterly: GEP_z = −0.028\* in m1. Full-sample quarterly m4: lagged GEP_z_lag1 = +0.0024\* — weak quarterly predictability.
 
 ---
 
@@ -190,68 +17,218 @@ Run at **h=0** (contemporaneous) and **h=1** (next-period predictability), acros
 ```
 Master_Thesis/
 │
-├── scripts/
+├── code/                          # Cluster pipeline scripts
 │   ├── cleaning/
-│   │   └── Cleaning_All_US.py
-│   └── training/
-│       ├── word2vec & GTM/
-│       │   ├── train_w2v_all.py
-│       │   └── GTM_8.py
-│       └── dict_score/
-│           ├── build_dictionary_8.py
-│           └── score_daily_index_new.py
+│   │   ├── clean_world.py         # World corpus cleaning (Reuters → tokenised .txt.gz)
+│   │   └── filter_region.py       # Filter world corpus → US (or other region)
+│   ├── training/
+│   │   ├── word2vec/
+│   │   │   └── train_w2v.py       # Word2Vec CBOW training on cleaned corpus
+│   │   └── gtm/
+│   │       └── gtm.py             # Guided Topic Model (6 topics)
+│   └── index/
+│       ├── build_index.py         # GEP index construction (MIN-K threshold)
+│       ├── build_index_country.py # Country-level GEP index
+│       └── normalize_index.py     # EPU-style normalisation (mean = 100)
 │
-├── slurm/                              # SLURM job scripts (WU cluster)
+├── slurm/                         # SLURM job scripts (WU cluster)
+│   ├── cleaning/
+│   │   ├── clean_world.slurm
+│   │   └── filter_us.slurm
+│   ├── training/
+│   │   ├── train_word2vec.slurm
+│   │   ├── run_gtm.slurm          # Main GTM (baseline seeds)
+│   │   └── run_gtm_v2.slurm       # GTM robustness (alternative seeds)
+│   └── index/
+│       ├── build_index_us.slurm
+│       └── build_index_countries.slurm
 │
-├── GTM_different_versions/
-│   └── GTM_new_final_results/         # FINAL — 6 topics
-│       ├── topic_Sanctions.csv
-│       ├── topic_Trade_Coercion.csv   # New: consolidates Trade War + Tariffs + Protectionism
-│       ├── topic_Export_Controls.csv
-│       ├── topic_Financial_Coercion.csv
-│       ├── topic_Retaliation.csv
-│       ├── topic_Embargo.csv
-│       ├── WordClouds/
-│       └── Combined_GEP_Grid_6.png
+├── data/                          # GEP index output (CSV)
+│   ├── gep_us/
+│   │   ├── GEP_Daily_Robust_min2.csv    # Official daily index (baseline, MIN-2)
+│   │   └── GEP_Monthly_Robust_min2.csv  # Official monthly index (baseline, MIN-2)
+│   ├── robustness/
+│   │   ├── GEP_Daily_min1.csv           # MIN-1 threshold (broadest)
+│   │   ├── GEP_Monthly_min1.csv
+│   │   ├── GEP_Daily_Robust_min3.csv    # MIN-3 threshold (strict)
+│   │   ├── GEP_Monthly_Robust_min3.csv
+│   │   ├── GEP_Daily_Robust_min4.csv    # MIN-4 threshold (most conservative)
+│   │   ├── GEP_Monthly_Robust_min4.csv
+│   │   ├── GEP_Daily_gtm_v2.csv         # GTM v2 — alternative seed words
+│   │   └── GEP_Monthly_gtm_v2.csv
+│   └── countries/
+│       ├── GEP_Monthly_JAPAN_min2.csv
+│       ├── GEP_Monthly_UK_min2.csv
+│       ├── GEP_Monthly_GERMANY_min2.csv
+│       ├── GEP_Monthly_RUSSIA_min2.csv
+│       ├── GEP_Monthly_IRAN_min2.csv
+│       └── GEP_Monthly_CHINA_min2.csv
 │
-├── DICTIONARY/
-│   └── geoeconomic_dictionary_new.csv
+├── analysis/                      # Local analysis scripts (run on Mac)
+│   ├── plot_index.py              # Main index plots + descriptive statistics
+│   ├── plot_comparisons.py        # GEP vs GPR / EPU / VIX / S&P 500 + regressions
+│   ├── plot_industries.py         # FF49 industry regressions + JKP factor regressions
+│   ├── plot_robustness.py         # Robustness checks (min-1/3/4 + GTM v2)
+│   ├── plot_countries.py          # Country-level GEP plots (6-panel + individual)
+│   └── output/                    # Generated plots saved here (gitignored)
 │
-└── INDEX/
-    └── index_new_final/
-        ├── MIN2/                      # FINAL INDEX
-        │   ├── GEP_Daily_Robust_min2.csv
-        │   ├── GEP_Monthly_Robust_min2.csv
-        │   ├── GEP_Monthly_Robust_min2.png
-        │   ├── GEP_Monthly_Robust_min2_norm100.png
-        │   ├── gep_vs_sp500_robust_min2.py
-        │   ├── gep_vs_gpr_robust_min2.py
-        │   └── return_predictability_min2.R
-        └── robustness/
-            ├── MIN1/                  # Threshold K=1 (broad)
-            ├── MIN3/                  # Threshold K=3 (strict)
-            └── MIN4/                  # Threshold K=4 (most conservative)
+├── Archive/                       # Superseded scripts and old index versions
+└── Final_Thesis_Clean/Archive/    # Previous analysis scripts (local Mac paths)
 ```
+
+> **Note:** Raw corpus data, Word2Vec models, and GTM topic outputs live on the WU cluster at `~/Final_Thesis_Clean/` and are not tracked in this repository. Only the final index CSVs (in `data/`) are committed.
 
 ---
 
-## Cluster Setup (WU HPC)
+## Pipeline
 
-All computationally intensive steps run on the WU Vienna HPC cluster (`wucluster`) via SLURM.
+### Step 1 — Cleaning
+
+**Script:** `code/cleaning/clean_world.py` → `code/cleaning/filter_region.py`
+**SLURM:** `slurm/cleaning/`
+
+The world Reuters corpus (1996–2025) is cleaned and tokenised:
+- Lowercasing, punctuation removal, boilerplate/diary removal
+- Bigram detection and concatenation (`trade_war`, `economic_sanctions`, …)
+- Output: one `.txt.gz` per year, one article per line, plus aligned metadata `.jsonl.gz`
+
+The world corpus is then filtered to US-centric articles via `filter_region.py`.
+
+---
+
+### Step 2 — Word2Vec Training
+
+**Script:** `code/training/word2vec/train_w2v.py`
+**SLURM:** `slurm/training/train_word2vec.slurm`
+
+Word2Vec CBOW trained on the US cleaned corpus:
+
+| Hyperparameter | Value |
+|---|---|
+| Architecture | CBOW (`sg=0`) |
+| Embedding dimension | 64 |
+| Context window | 18 |
+| Min word count | 20 |
+| Negative samples | 10 |
+| Training epochs | 100 |
+
+---
+
+### Step 3 — Guided Topic Modeling (GTM-6)
+
+**Script:** `code/training/gtm/gtm.py`
+**SLURM:** `slurm/training/run_gtm.slurm` (baseline) · `run_gtm_v2.slurm` (robustness)
+
+The GTM algorithm expands six geoeconomic sub-topics from seed words in the 64-dimensional embedding space (cluster size 100, gravity 1.5).
+
+#### The 6 Topics
+
+| # | Topic | Positive seeds | Negative seeds |
+|---|---|---|---|
+| 1 | **Sanctions** | `economic_sanctions`, `targeted_sanctions` | `sanctions_relief`, `sanctions_waiver` |
+| 2 | **Trade Coercion** | `trade_war`, `retaliatory_tariffs` | `trade_deal`, `trade_pact` |
+| 3 | **Export Controls** | `export_ban`, `entity_list` | `export_license`, `export_licenses` |
+| 4 | **Financial Coercion** | `asset_freeze`, `secondary_sanctions` | `debt_relief` |
+| 5 | **Embargo** | `trade_embargo`, `oil_embargo` | `lift_embargo`, `lifting_sanctions` |
+| 6 | **Retaliation** | `retaliation`, `countermeasures` | `concessions`, `goodwill_gesture` |
+
+**GTM v2 (robustness):** same 6 topics, alternative seed words emphasising ratcheting sanctions, anti-dumping, semiconductor denial, extraterritorial sanctions, energy weaponisation, and diplomatic retaliation.
+
+---
+
+### Step 4 — Index Construction
+
+**Script:** `code/index/build_index.py`
+**SLURM:** `slurm/index/build_index_us.slurm`
+
+The GEP index measures the **daily share of articles classified as geoeconomic**:
+
+$$\text{GEP}_d = \frac{n_{\text{GEP articles},\, d}}{n_{\text{articles},\, d}}$$
+
+An article is a GEP article if it contains keywords from at least $K$ distinct topic categories:
+
+$$\mathbf{1}[\text{GEP}_i] = \mathbf{1}\!\left[\left|\{q : \exists\, w \in \text{topic}_q \cap \text{article}_i\}\right| \geq K\right]$$
+
+#### Why threshold-based
+
+| | Score-based (old) | MIN-K threshold (new) |
+|---|---|---|
+| Scale | Raw weighted freq (~10⁻⁴) | Proportion ∈ [0,1], interpretable |
+| Stationarity | Requires differencing | Stationary in levels (ADF confirmed) |
+| Regression | Must use ΔGEP | Can use GEP levels directly |
+
+#### Robustness variants
+
+| File | K | Interpretation |
+|---|---|---|
+| `GEP_*_min1.csv` | ≥ 1 topic | Broadest — any GEP mention |
+| **`GEP_*_Robust_min2.csv`** | **≥ 2 topics** | **Baseline (official index)** |
+| `GEP_*_Robust_min3.csv` | ≥ 3 topics | Stricter |
+| `GEP_*_Robust_min4.csv` | ≥ 4 topics | Most conservative |
+| `GEP_*_gtm_v2.csv` | ≥ 2 topics | Alternative GTM seed words |
+
+Country-level indices (Japan, UK, Germany, Russia, Iran, China) are built with `build_index_country.py`, adding a country-name filter on top of the topic threshold.
+
+---
+
+## Analysis Scripts
+
+All scripts in `analysis/` use paths relative to the repo root (`../data/`) — no hardcoded local paths. They run locally (Mac) using the CSVs in `data/`.
+
+| Script | What it produces |
+|---|---|
+| `plot_index.py` | Normalised monthly + daily index plots, 2025 zoom, rolling vol, distribution, ACF/PACF, annual stats, heatmap |
+| `plot_comparisons.py` | GEP vs GPR, EPU, VIX, S&P 500 — z-score overlays, rolling correlations, cross-correlations, HAC regressions |
+| `plot_industries.py` | FF49 industry exposures (levels + first-diff, with/without GPR); JKP factor exposures |
+| `plot_robustness.py` | Individual variant plots + overlay comparison + GTM v2 |
+| `plot_countries.py` | 3×2 country panel + individual country plots |
+
+External data needed in `data/external/`: GPR xls (Caldara & Iacoviello), EPU csv/xlsx (Baker-Bloom-Davis), JKP factor csvs. FF3/FF49 and VIX/S&P 500 download automatically.
+
+---
+
+## Key Results
+
+**1. GEP is a contemporaneous indicator, not a predictor.** Predictive regressions at h=1 are uniformly insignificant. GEP reflects market reactions to geoeconomic events.
+
+**2. The sign of the GEP effect flips across regimes:**
+
+| Period | Effect on returns | Interpretation |
+|---|---|---|
+| Pre-GFC (1996–2007) | Negative* | Geoeconomic news hurts markets |
+| Post-GFC (2012–2021) | Positive** (with FF3) | Geopolitical risk premium |
+| Russia–Ukraine (2022–2023) | Negative* | Return to fear-driven reaction |
+
+**3. GEP and GPR are complementary.** Low but positive correlation — GEP captures economic coercion, GPR captures military/geopolitical threat.
+
+**4. Industry exposure is heterogeneous.** Defense, Oil, and Gold load positively on GEP; Consumer Goods, Retail, and Financials load negatively.
+
+---
+
+## Cluster Workflow (WU HPC)
 
 ```bash
-# Push local changes → cluster
+# Push → cluster
 git add . && git commit -m "..." && git push
 ssh wucluster "git -C ~/Master_Thesis pull"
 
-# Pull cluster results → local
-git pull
+# Run pipeline (submit SLURM jobs in order)
+sbatch slurm/cleaning/clean_world.slurm
+sbatch --dependency=afterok:<job_id> slurm/cleaning/filter_us.slurm
+sbatch --dependency=afterok:<job_id> slurm/training/train_word2vec.slurm
+sbatch --dependency=afterok:<job_id> slurm/training/run_gtm.slurm
+sbatch --dependency=afterok:<job_id> slurm/index/build_index_us.slurm
+
+# Pull results → local
+scp wucluster:~/Final_Thesis_Clean/output/GEP_Index_US/GEP_*_Robust_min2.csv data/gep_us/
+git add data/ && git commit -m "update index" && git push
 ```
 
 ---
 
 ## References
 
-- Dangl, T., Halling, M. & Salbrechter, S. (2025). *The Price of Physical Climate Risk Estimated from Public News via Guided Topic Modeling*. October 11, 2025.
-- Dangl, T. & Salbrechter, S. (2023). *Guided Topic Modeling with Word2Vec: A Technical Note*. First draft, September 19, 2023.
+- Dangl, T., Halling, M. & Salbrechter, S. (2025). *The Price of Physical Climate Risk Estimated from Public News via Guided Topic Modeling*.
+- Dangl, T. & Salbrechter, S. (2023). *Guided Topic Modeling with Word2Vec: A Technical Note*.
 - Caldara, D. & Iacoviello, M. (2022). *Measuring Geopolitical Risk*. American Economic Review, 112(4), 1194–1225.
+- Baker, S., Bloom, N. & Davis, S. (2016). *Measuring Economic Policy Uncertainty*. Quarterly Journal of Economics, 131(4), 1593–1636.

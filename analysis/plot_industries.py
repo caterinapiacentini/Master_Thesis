@@ -40,8 +40,8 @@ from pathlib import Path
 warnings.filterwarnings("ignore")
 
 HERE = Path(__file__).parent
-DATA = HERE / "data"
-GEP  = DATA / "gep"
+DATA = HERE.parent / "data"
+GEP  = DATA / "gep_us"
 EXT  = DATA / "external"
 OUT  = HERE / "output" / "industries"
 OUT.mkdir(parents=True, exist_ok=True)

@@ -35,7 +35,7 @@ from statsmodels.tsa.stattools import adfuller
 warnings.filterwarnings("ignore")
 
 HERE = Path(__file__).parent
-DATA = HERE / "data" / "gep"
+DATA = HERE.parent / "data" / "gep_us"
 OUT  = HERE / "output" / "index"
 OUT.mkdir(parents=True, exist_ok=True)
 

@@ -35,8 +35,8 @@ from scipy import stats
 warnings.filterwarnings("ignore")
 
 HERE   = Path(__file__).parent
-GEP    = HERE / "data" / "gep"
-ROBUST = HERE / "data" / "robustness"
+GEP    = HERE.parent / "data" / "gep_us"
+ROBUST = HERE.parent / "data" / "robustness"
 OUT    = HERE / "output" / "robustness"
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -240,7 +240,7 @@ def plot_version(label, monthly_path, daily_path, out_prefix):
 # Run all variant plots
 # ═════════════════════════════════════════════════════════════════════════════
 VERSIONS = [
-    ("Robust min-1", ROBUST / "GEP_Monthly_Updated.csv",      ROBUST / "GEP_Daily_Updated.csv",      "GEP_min1"),
+    ("Robust min-1", ROBUST / "GEP_Monthly_min1.csv",          ROBUST / "GEP_Daily_min1.csv",          "GEP_min1"),
     ("Robust min-2", GEP    / "GEP_Monthly_Robust_min2.csv",  GEP    / "GEP_Daily_Robust_min2.csv",  "GEP_min2"),
     ("Robust min-3", ROBUST / "GEP_Monthly_Robust_min3.csv",  ROBUST / "GEP_Daily_Robust_min3.csv",  "GEP_min3"),
     ("Robust min-4", ROBUST / "GEP_Monthly_Robust_min4.csv",  ROBUST / "GEP_Daily_Robust_min4.csv",  "GEP_min4"),
@@ -323,8 +323,8 @@ if series:
 # ═════════════════════════════════════════════════════════════════════════════
 # GTM v2 plots (alternative seed words — robustness check)
 # ═════════════════════════════════════════════════════════════════════════════
-v2_monthly = ROBUST / "GEP_Monthly_Robust_min2_v2.csv"
-v2_daily   = ROBUST / "GEP_Daily_Robust_min2_v2.csv"
+v2_monthly = ROBUST / "GEP_Monthly_gtm_v2.csv"
+v2_daily   = ROBUST / "GEP_Daily_gtm_v2.csv"
 
 if v2_monthly.exists() and v2_daily.exists():
     print("\n--- GTM v2 (alternative seeds) ---")
