@@ -20,8 +20,6 @@ Outputs saved to output/industries/
   GEP_Industry_Predic_Daily.png            (FF49 + GPR, levels, predictive)
   GEP_Industry_Contemp_Daily_DELTA.png     (FF49 + ΔGPR, first-diff, contemporaneous)
   GEP_Industry_Predic_Daily_DELTA.png      (FF49 + ΔGPR, first-diff, predictive)
-  GEP_Industry_Contemp_Daily_no_GPR.png    (FF49 only, no GPR, contemporaneous)
-  GEP_Industry_Predic_Daily_no_GPR.png     (FF49 only, no GPR, predictive)
   GEP_Factor_Contemp_Daily.png             (JKP, levels, contemporaneous)
   GEP_Factor_Predic_Daily.png              (JKP, levels, predictive)
   GEP_Factor_Contemp_Daily_DELTA.png       (JKP, first-diff, contemporaneous)
@@ -138,20 +136,15 @@ def stars(p): return "***" if p < 0.01 else ("**" if p < 0.05 else ("*" if p < 0
 # ─────────────────────────────────────────────────────────────────────────────
 # Regression engines
 # ─────────────────────────────────────────────────────────────────────────────
-def run_ind_regressions(ind_df, ff_df, gep_series, gpr_series, with_gpr=True):
-    """Industry-level regressions: contemp + predictive."""
+def run_ind_regressions(ind_df, ff_df, gep_series, gpr_series):
+    """Industry-level regressions: contemp + predictive, with FF3 + GPR controls."""
     results = []
-    gep_col = gep_series.columns[0]
     for industry in ind_df.columns:
-        pieces = [ind_df[[industry]], gep_series, ff_df]
-        if with_gpr: pieces.append(gpr_series)
-        df = pd.concat(pieces, axis=1).dropna()
-        cols = ["RET", "GEP", "MktRF", "SMB", "HML", "RF"]
-        if with_gpr: cols.append("GPR")
-        df.columns = cols
+        df = pd.concat([ind_df[[industry]], gep_series, ff_df, gpr_series], axis=1).dropna()
+        df.columns = ["RET", "GEP", "MktRF", "SMB", "HML", "RF", "GPR"]
         df["y"]       = df["RET"] - df["RF"]
         df["gep_var"] = df["GEP"] * 100
-        ctrl = ["MktRF", "SMB", "HML"] + (["GPR"] if with_gpr else [])
+        ctrl = ["MktRF", "SMB", "HML", "GPR"]
 
         X1 = sm.add_constant(df[["gep_var"] + ctrl])
         m1 = sm.OLS(df["y"], X1).fit(cov_type="HC3")
@@ -208,10 +201,8 @@ def plot_exposure(df, beta_col, pval_col, title, filename, subtitle_note=""):
 # FF49 with GPR (levels + delta)
 # ═════════════════════════════════════════════════════════════════════════════
 print("\nRunning FF49 regressions — levels (with GPR)...")
-res_d_lev = run_ind_regressions(ind_d, ff3_d,
-                                daily_gep[["GEP_daily"]],   gpr_daily[["GPR_daily"]],  with_gpr=True)
-res_d_dlt = run_ind_regressions(ind_d, ff3_d,
-                                dgep_daily[["GEP_daily"]],  dgpr_daily[["GPR_daily"]], with_gpr=True)
+res_d_lev = run_ind_regressions(ind_d, ff3_d, daily_gep[["GEP_daily"]],  gpr_daily[["GPR_daily"]])
+res_d_dlt = run_ind_regressions(ind_d, ff3_d, dgep_daily[["GEP_daily"]], dgpr_daily[["GPR_daily"]])
 
 for res, beta_c, pval_c, title, fname, note in [
     (res_d_lev, "Contemp_Beta", "Contemp_Pval",
@@ -232,26 +223,6 @@ for res, beta_c, pval_c, title, fname, note in [
      "Beta on lagged ΔGEP (×10 000, std). Controls: FF3 + ΔGPR daily. SE: HC3."),
 ]:
     plot_exposure(res, beta_c, pval_c, title, fname, note)
-
-# ═════════════════════════════════════════════════════════════════════════════
-# FF49 without GPR
-# ═════════════════════════════════════════════════════════════════════════════
-print("\nRunning FF49 regressions — levels (no GPR)...")
-res_d_no_gpr = run_ind_regressions(ind_d, ff3_d,
-                                   daily_gep[["GEP_daily"]], None, with_gpr=False)
-
-for res, beta_c, pval_c, title, fname, note in [
-    (res_d_no_gpr, "Contemp_Beta", "Contemp_Pval",
-     "GEP Industry Exposure — Daily Contemporaneous [NO GPR]",
-     OUT / "GEP_Industry_Contemp_Daily_no_GPR.png",
-     "Beta on GEP (×10 000, std). Controls: FF3 only. SE: HC3."),
-    (res_d_no_gpr, "Predic_Beta", "Predic_Pval",
-     "GEP Industry Exposure — Daily Predictive [NO GPR]",
-     OUT / "GEP_Industry_Predic_Daily_no_GPR.png",
-     "Beta on lagged GEP (×10 000, std). Controls: FF3 only. SE: HC3."),
-]:
-    plot_exposure(res, beta_c, pval_c, title, fname, note)
-
 
 # ═════════════════════════════════════════════════════════════════════════════
 # JKP Factors
