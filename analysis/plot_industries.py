@@ -229,6 +229,45 @@ for res, beta_c, pval_c, title, fname, note in [
     plot_exposure(res, beta_c, pval_c, title, fname, note)
 
 # ═════════════════════════════════════════════════════════════════════════════
+# FF49 MONTHLY — console output only (ALL results)
+# ═════════════════════════════════════════════════════════════════════════════
+print("\nRunning FF49 regressions — monthly levels (with GPR)...")
+res_m_lev = run_ind_regressions(ind_m, ff3_m, monthly_gep[["GEP_monthly"]], gpr_monthly[["GPR_monthly"]])
+
+print("\nRunning FF49 regressions — monthly first differences (with ΔGPR)...")
+res_m_dlt = run_ind_regressions(ind_m, ff3_m, dgep_monthly[["GEP_monthly"]], dgpr_monthly[["GPR_monthly"]])
+
+for res, label_contemp, label_predic in [
+    (res_m_lev,
+     "FF49 MONTHLY — LEVELS — CONTEMPORANEOUS",
+     "FF49 MONTHLY — LEVELS — PREDICTIVE"),
+    (res_m_dlt,
+     "FF49 MONTHLY — FIRST DIFFERENCES — CONTEMPORANEOUS",
+     "FF49 MONTHLY — FIRST DIFFERENCES — PREDICTIVE"),
+]:
+    print("\n" + "="*70)
+    print(label_contemp)
+    print("="*70)
+    print(f"  {'Industry':<40}  {'Beta':>10}  {'SE':>10}  {'p':>8}  {'Sig'}")
+    print("  " + "-"*70)
+    for _, row in res.sort_values("Contemp_Pval").iterrows():
+        s = stars(row["Contemp_Pval"])
+        print(f"  {full_name(row['Industry']):<40}  "
+              f"{row['Contemp_Beta']:>+10.6f}  "
+              f"p={row['Contemp_Pval']:>6.3f}  {s}")
+
+    print("\n" + "="*70)
+    print(label_predic)
+    print("="*70)
+    print(f"  {'Industry':<40}  {'Beta':>10}  {'p':>8}  {'Sig'}")
+    print("  " + "-"*70)
+    for _, row in res.sort_values("Predic_Pval").iterrows():
+        s = stars(row["Predic_Pval"])
+        print(f"  {full_name(row['Industry']):<40}  "
+              f"{row['Predic_Beta']:>+10.6f}  "
+              f"p={row['Predic_Pval']:>6.3f}  {s}")
+
+# ═════════════════════════════════════════════════════════════════════════════
 # JKP Factors
 # ═════════════════════════════════════════════════════════════════════════════
 FACTOR_RENAME = {
@@ -361,3 +400,33 @@ else:
     print("  Skipping JKP factor regressions.")
 
 print("\n═══ All industry/factor plots saved to output/industries/ ═══")
+
+for res, label_contemp, label_predic in [
+        (res_jkp_m,
+         "JKP MONTHLY — LEVELS — CONTEMPORANEOUS",
+         "JKP MONTHLY — LEVELS — PREDICTIVE"),
+        (res_jkp_m_dlt,
+         "JKP MONTHLY — FIRST DIFFERENCES — CONTEMPORANEOUS",
+         "JKP MONTHLY — FIRST DIFFERENCES — PREDICTIVE"),
+    ]:
+        print("\n" + "="*70)
+        print(label_contemp)
+        print("="*70)
+        print(f"  {'Factor':<45}  {'Beta':>10}  {'p':>8}  {'Sig'}")
+        print("  " + "-"*70)
+        for _, row in res.sort_values("Contemp_Pval").iterrows():
+            s = stars(row["Contemp_Pval"])
+            print(f"  {row['Factor']:<45}  "
+                  f"{row['Contemp_Beta']:>+10.6f}  "
+                  f"p={row['Contemp_Pval']:>6.3f}  {s}")
+
+        print("\n" + "="*70)
+        print(label_predic)
+        print("="*70)
+        print(f"  {'Factor':<45}  {'Beta':>10}  {'p':>8}  {'Sig'}")
+        print("  " + "-"*70)
+        for _, row in res.sort_values("Predic_Pval").iterrows():
+            s = stars(row["Predic_Pval"])
+            print(f"  {row['Factor']:<45}  "
+                  f"{row['Predic_Beta']:>+10.6f}  "
+                  f"p={row['Predic_Pval']:>6.3f}  {s}")

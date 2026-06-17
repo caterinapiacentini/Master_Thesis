@@ -501,6 +501,33 @@ for name, (s, e) in SUBS_MO.items():
             ["GEP_Norm_lag1", "Mkt-RF_lag1", "SMB_lag1", "HML_lag1", "VIX_Norm_lag1", "GPR_lag1"],
             slice_df(reg_mo, s, e), name, "GEP_Norm_lag1", hac_lags=4)
 
+# Daily VIX setup
+reg_d = pd.merge(daily_gep[["GEP_daily"]].reset_index().rename(columns={"date": "Date"}),
+                 vix_d, on="Date", how="inner")
+reg_d = pd.merge(reg_d, ff3_d[["Date", "Mkt-RF", "SMB", "HML"]], on="Date", how="inner")
+reg_d = pd.merge(reg_d, gpr_d_df, on="Date", how="left").set_index("Date").sort_index()
+gep_mean_d = reg_d["GEP_daily"][(reg_d.index.year >= 1996) & (reg_d.index.year <= 2025)].mean()
+vix_mean_d = reg_d["VIX"][(reg_d.index.year >= 1996) & (reg_d.index.year <= 2025)].mean()
+reg_d["GEP_Norm"] = reg_d["GEP_daily"] / gep_mean_d * 100
+reg_d["VIX_Norm"] = reg_d["VIX"] / vix_mean_d * 100
+
+for col in ["GEP_Norm", "Mkt-RF", "SMB", "HML", "VIX_Norm", "GPR"]:
+    reg_d[f"{col}_lag1"] = reg_d[col].shift(1)
+
+SUBS_D_VIX = {k: (s.replace("-01", "-01-01").replace("-12", "-12-31") if s else s,
+                   e.replace("-01", "-01-01").replace("-12", "-12-31") if e else e)
+              for k, (s, e) in SUBSAMPLES.items()}
+
+print("\nDAILY REGRESSIONS: VIX (HAC, 10 lags)")
+print("[D1] Contemp  VIX_t ~ GEP_t + FF3_t + GPR_t")
+for name, (s, e) in SUBS_D_VIX.items():
+    run_ols("VIX_Norm", ["GEP_Norm", "Mkt-RF", "SMB", "HML", "GPR"],
+            slice_df(reg_d, s, e), name, "GEP_Norm", hac_lags=10)
+print("[D2] Predictive  VIX_t ~ GEP_{t-1} + FF3_{t-1} + VIX_{t-1} + GPR_{t-1}")
+for name, (s, e) in SUBS_D_VIX.items():
+    run_ols("VIX_Norm",
+            ["GEP_Norm_lag1", "Mkt-RF_lag1", "SMB_lag1", "HML_lag1", "VIX_Norm_lag1", "GPR_lag1"],
+            slice_df(reg_d, s, e), name, "GEP_Norm_lag1", hac_lags=10)
 
 # ═════════════════════════════════════════════════════════════════════════════
 # GEP vs S&P 500
