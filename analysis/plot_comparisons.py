@@ -50,6 +50,11 @@ GPR_EXPORT = EXT / "data_gpr_export.xls"
 GPR_XLS    = GPR_RECENT if GPR_RECENT.exists() else GPR_EXPORT
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Set the font family globally
+# ─────────────────────────────────────────────────────────────────────────────
+plt.rcParams['font.family'] = 'serif'
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Load GEP
 # ─────────────────────────────────────────────────────────────────────────────
 monthly_gep = pd.read_csv(GEP / "GEP_Monthly_Robust_min2.csv")
@@ -326,6 +331,95 @@ plt.tight_layout()
 plt.savefig(OUT / "gep_vs_epud_crosscorr.png", dpi=150, bbox_inches="tight")
 print("Saved: gep_vs_epud_crosscorr.png"); plt.close()
 
+# ═════════════════════════════════════════════════════════════════════════════
+# FINAL COMPARISON GEP vs GPR & EPU
+# ═════════════════════════════════════════════════════════════════════════════
+
+# Calculate the normalization factor for GEP (same as your original monthly code)
+monthly_gep["GEP_norm_mo"] = (monthly_gep["GEP_monthly"] / monthly_gep["GEP_monthly"].mean()) * 100
+
+# Align indices
+df_final = pd.DataFrame(index=monthly_gep.index)
+df_final["GEP"] = monthly_gep["GEP_norm_mo"]
+
+# Get GPR monthly means and align
+gpr_mo = gpr_raw_df["GPRD"].resample("MS").mean()
+df_final["GPR"] = gpr_mo.reindex(df_final.index)
+
+# Get EPU monthly values and align
+epu_mo_data = epu_m.set_index("date")["EPU"]
+df_final["EPU"] = epu_mo_data.reindex(df_final.index)
+
+# Fill nas to ensure clean plotting
+df_final = df_final.dropna(subset=["GEP", "GPR", "EPU"])
+
+
+fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+
+# Colors matching the image
+c_gep = "#3E64B2" # Dark Blue
+c_other = "#DD3F32" # Red
+
+# --- Top Plot: GEP vs GPR ---
+ax1 = axes[0]
+l1 = ax1.plot(df_final.index, df_final["GEP"], color=c_gep, lw=1.5, label="GEP, left scale")
+
+# Create a twin axis for GPR
+ax1_twin = ax1.twinx()
+l2 = ax1_twin.plot(df_final.index, df_final["GPR"], color=c_other, lw=1.5, label="GPR, right scale")
+
+# Formatting for top plot
+ax1.set_yscale("log")
+ax1.set_yticks([50, 100, 200, 400, 600])
+ax1.yaxis.set_major_formatter(mticker.ScalarFormatter())
+ax1.tick_params(axis="y", colors=c_gep, direction="out", labelsize=11)
+ax1_twin.tick_params(axis="y", colors=c_other, direction="out", labelsize=11)
+
+# Combined legend for top plot
+lines1 = l1 + l2
+labels1 = [l.get_label() for l in lines1]
+ax1.legend(lines1, labels1, loc="upper center", frameon=True, edgecolor="black")
+
+
+# --- Bottom Plot: GEP vs EPU ---
+ax2 = axes[1]
+l3 = ax2.plot(df_final.index, df_final["GEP"], color=c_gep, lw=1.5, label="GEP, left scale")
+
+# Create a twin axis for EPU
+ax2_twin = ax2.twinx()
+l4 = ax2_twin.plot(df_final.index, df_final["EPU"], color=c_other, lw=1.5, label="EPU, right scale")
+
+# Formatting for bottom plot
+ax2.set_yscale("log")
+ax2.set_yticks([50, 100, 200, 400, 600])
+ax2.yaxis.set_major_formatter(mticker.ScalarFormatter())
+ax2.tick_params(axis="y", colors=c_gep, direction="out", labelsize=11)
+ax2_twin.tick_params(axis="y", colors=c_other, direction="out", labelsize=11)
+
+# Combined legend for bottom plot
+lines2 = l3 + l4
+labels2 = [l.get_label() for l in lines2]
+ax2.legend(lines2, labels2, loc="upper center", frameon=True, edgecolor="black")
+
+
+# --- Global formatting ---
+for ax, tw_ax in zip([ax1, ax2], [ax1_twin, ax2_twin]):
+    # Set x limits
+    ax.set_xlim(pd.Timestamp("1996-01-01"), pd.Timestamp("2026-06-01"))
+    
+    # Hide top spine for both
+    ax.spines["top"].set_visible(False)
+    tw_ax.spines["top"].set_visible(False)
+    
+    # Format the tick marks and text
+    ax.tick_params(axis="x", direction="out", labelsize=11)
+    
+
+plt.tight_layout()
+plt.subplots_adjust(hspace=0.2)
+plt.savefig(OUT / "Final_Comparison_GEP_GPR_EPU.png", dpi=300, bbox_inches="tight")
+print("Saved: Final_Comparison_GEP_GPR_EPU.png")
+plt.close()
 
 # ═════════════════════════════════════════════════════════════════════════════
 # GEP vs VIX
