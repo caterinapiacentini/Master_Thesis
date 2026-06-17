@@ -4,24 +4,7 @@
 plot_countries.py
 
 GEP country indices — 3x2 panel (Japan, UK, Germany, Russia, Iran, China)
-+ individual country plots.
-
-DATA layout (relative to this script):
-  data/countries/GEP_Monthly_JAPAN_min2.csv
-  data/countries/GEP_Monthly_UK_min2.csv
-  data/countries/GEP_Monthly_GERMANY_min2.csv
-  data/countries/GEP_Monthly_RUSSIA_min2.csv
-  data/countries/GEP_Monthly_IRAN_min2.csv
-  data/countries/GEP_Monthly_CHINA_min2.csv
-
-Outputs saved to output/countries/
-  GEP_6Countries_1996_2025.png
-  GEP_Japan_1996_2025.png
-  GEP_UK_1996_2025.png
-  GEP_Germany_1996_2025.png
-  GEP_Russia_1996_2025.png
-  GEP_Iran_1996_2025.png
-  GEP_China_1996_2025.png
++ individual country plots. (Caldara & Iacoviello Academic Style)
 """
 
 import pandas as pd
@@ -29,6 +12,12 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
 from pathlib import Path
+
+# Configurazione font globale per uno stile accademico uniforme
+plt.rcParams["font.family"] = "serif"
+
+# Blu scuro istituzionale (Stile C&I)
+COL_GEP = "#2b4c8c"
 
 try:
     HERE = Path(__file__).parent
@@ -42,94 +31,69 @@ OUT.mkdir(parents=True, exist_ok=True)
 START = "1996-01-01"
 END   = "2025-12-31"
 
+# Liste eventi ottimizzate e sfoltite (Focus su shock geopolitici idiosincratici)
+# Liste eventi ottimizzate con offset (x, y) ricalibrati per evitare sovrapposizioni
 COUNTRIES = [
     {
         "title":  "GEP Japan",
         "file":   "GEP_Monthly_JAPAN_min2.csv",
         "events": [
-            ("Asian Crisis",      "1997-07-01", 0.08),
-            ("9/11",              "2001-09-01", 0.08),
-            ("Iraq War",          "2003-03-01", 0.08),
-            ("Senkaku\nTension",  "2010-09-01", 0.10),
-            ("N.Korea\nNuclears", "2013-02-01", 0.08),
-            ("N.Korea\nMissiles", "2017-08-01", 0.10),
-            ("US-China\nTrade",   "2018-07-01", 0.08),
-            ("COVID-19",          "2020-03-01", 0.08),
-            ("Ukraine\nInvasion", "2022-02-01", 0.10),
-            ("Export\nControls",  "2023-07-01", 0.08),
+            ("9/11",              "2001-09-01", (0, 20)),
+            ("Senkaku Tension",   "2010-09-01", (0, 30)),     # Alzato per uscire dalla linea
+            ("N.Korea Missiles",  "2017-08-01", (-25, 25)),   # Spinto in alto a sinistra
+            ("US-China Trade",    "2018-07-01", (15, -35)),   # Spinto in basso a destra per separarlo dai missili
+            ("Ukraine Invasion",  "2022-02-01", (0, 25)),     # Alzato sopra il picco
         ],
     },
     {
         "title":  "GEP United Kingdom",
         "file":   "GEP_Monthly_UK_min2.csv",
         "events": [
-            ("Asian Crisis",      "1997-07-01", 0.08),
-            ("9/11",              "2001-09-01", 0.10),
-            ("Iraq War",          "2003-03-01", 0.08),
-            ("GFC",               "2008-09-01", 0.08),
-            ("Brexit\nVote",      "2016-06-01", 0.08),
-            ("US-China\nTrade",   "2018-07-01", 0.08),
-            ("COVID-19",          "2020-03-01", 0.08),
-            ("Ukraine\nInvasion", "2022-02-01", 0.10),
+            ("9/11",              "2001-09-01", (0, 20)),
+            ("Iraq War",          "2003-03-01", (25, 10)),    
+            ("Brexit Vote",       "2016-06-01", (0, -35)),   
+            ("Ukraine Invasion",  "2022-02-01", (0, 25)),
         ],
     },
     {
         "title":  "GEP Germany",
         "file":   "GEP_Monthly_GERMANY_min2.csv",
         "events": [
-            ("Asian Crisis",      "1997-07-01", 0.08),
-            ("9/11",              "2001-09-01", 0.10),
-            ("Iraq War",          "2003-03-01", 0.08),
-            ("GFC",               "2008-09-01", 0.08),
-            ("Eurozone\nCrisis",  "2010-05-01", 0.10),
-            ("Brexit\nVote",      "2016-06-01", 0.08),
-            ("US-China\nTrade",   "2018-07-01", 0.08),
-            ("COVID-19",          "2020-03-01", 0.08),
-            ("Ukraine\nInvasion", "2022-02-01", 0.10),
+            ("Iraq War",          "2003-03-01", (0, 20)),
+            ("Eurozone Crisis",   "2010-05-01", (0, 30)),     
+            ("COVID-19",          "2020-03-01", (0, -35)),
+            ("Ukraine Invasion",  "2022-02-01", (0, 25)),
         ],
     },
     {
         "title":  "GEP Russia",
         "file":   "GEP_Monthly_RUSSIA_min2.csv",
         "events": [
-            ("Kosovo\nNATO",       "1999-03-01", 0.08),
-            ("9/11",               "2001-09-01", 0.08),
-            ("Iraq War",           "2003-03-01", 0.08),
-            ("Georgia\nWar",       "2008-08-01", 0.10),
-            ("Crimea\nAnnexation", "2014-03-01", 0.10),
-            ("Syria\nIntervention","2015-09-01", 0.08),
-            ("US-China\nTrade",    "2018-07-01", 0.08),
-            ("COVID-19",           "2020-03-01", 0.08),
-            ("Ukraine\nInvasion",  "2022-02-01", 0.12),
-        ],
+            ("Georgia War",        "2008-08-01", (0, 20)),
+            ("Crimea Annexation",  "2014-03-01", (0, 20)),
+            ("Syria Intervention", "2015-09-01", (0, -45)),   
+            ("Ukraine Invasion",   "2022-02-01", (-15, 25)), 
+        ], 
     },
     {
         "title":  "GEP Iran",
         "file":   "GEP_Monthly_IRAN_min2.csv",
         "events": [
-            ("9/11",              "2001-09-01", 0.08),
-            ("Iraq War",          "2003-03-01", 0.08),
-            ("Nuclear\nCrisis",   "2006-01-01", 0.08),
-            ("JCPOA\nSigning",    "2015-07-01", 0.08),
-            ("JCPOA\nWithdrawal", "2018-05-01", 0.10),
-            ("Soleimani",         "2020-01-01", 0.10),
-            ("COVID-19",          "2020-03-01", 0.08),
-            ("Ukraine\nInvasion", "2022-02-01", 0.08),
+            ("Nuclear Crisis",    "2006-01-01", (0, 20)),
+            ("JCPOA Withdrawal",  "2018-05-01", (-25, 25)),   
+            ("Soleimani",         "2020-01-01", (25, 25)),    
+            ("Ukraine Invasion",  "2022-02-01", (0, 25)),
         ],
     },
     {
         "title":  "GEP China",
         "file":   "GEP_Monthly_CHINA_min2.csv",
         "events": [
-            ("Asian Crisis",      "1997-07-01", 0.08),
-            ("9/11",              "2001-09-01", 0.08),
-            ("Iraq War",          "2003-03-01", 0.08),
-            ("GFC",               "2008-09-01", 0.08),
-            ("S.China Sea",       "2012-07-01", 0.08),
-            ("US-China\nTrade",   "2018-07-01", 0.10),
-            ("COVID-19",          "2020-03-01", 0.08),
-            ("Ukraine\nInvasion", "2022-02-01", 0.08),
-            ("Export\nControls",  "2023-07-01", 0.08),
+            ("Asian Crisis",      "1997-07-01", (0, 25)),     
+            ("S.China Sea",       "2012-07-01", (0, 25)),
+            ("US-China Trade",    "2018-07-01", (-15, 25)),
+            ("COVID-19",          "2020-03-01", (0, -35)),
+            ("Export Controls",   "2023-07-01", (25, -25)),   
         ],
     },
 ]
@@ -144,90 +108,128 @@ def load_and_normalize(file_path):
     return df
 
 
-def annotate_events(ax, df, events, y_max):
-    for label, date_str, y_frac in events:
+def annotate_events_academic(ax, df, events, font_size=6):
+    """Disegna un punto solido sul picco e posiziona l'etichetta con offset in punti."""
+    for label, date_str, offset in events:
         event_date = pd.Timestamp(date_str)
         if event_date < df["date"].min() or event_date > df["date"].max():
             continue
-        idx   = (df["date"] - event_date).abs().idxmin()
+        
+        idx = (df["date"] - event_date).abs().idxmin()
         y_val = df.loc[idx, "GEP_norm"]
         x_val = df.loc[idx, "date"]
-        y_text = y_val + y_frac * y_max
-        ax.annotate(
-            label, xy=(x_val, y_val), xytext=(x_val, y_text),
-            fontsize=5.5, ha="center", va="bottom", color="black",
-            arrowprops=dict(arrowstyle="-", color="black", lw=0.5),
-            annotation_clip=False,
+        
+        # Punto solido sul picco della serie indici
+        ax.scatter(x_val, y_val, s=15, color=COL_GEP, zorder=5, linewidths=0)
+        
+        # Attiva la freccia solo se l'offset sposta il testo in basso o lateralmente
+        use_arrow = True if (abs(offset[0]) > 10 or abs(offset[1]) > 20 or offset[1] < 0) else False
+        
+        text_kwargs = dict(
+            text=label.replace("\n", " "),
+            xy=(x_val, y_val),
+            xytext=offset,
+            textcoords="offset points",
+            fontsize=font_size,
+            ha="center",
+            va="center" if use_arrow else "bottom",
+            color="black",
+            alpha=0.9
         )
+        
+        if use_arrow:
+            ax.annotate(
+                **text_kwargs,
+                arrowprops=dict(arrowstyle="-|>", color="black", lw=0.4, mutation_scale=5)
+            )
+        else:
+            ax.annotate(**text_kwargs)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# PLOT 1 — 3×2 panel: all 6 countries
+# PLOT 1 — Pannello 3 righe × 2 colonne (Layout ottimizzato per tesi/paper)
 # ═════════════════════════════════════════════════════════════════════════════
-fig, axes = plt.subplots(2, 3, figsize=(18, 8), dpi=150)
+fig, axes = plt.subplots(3, 2, figsize=(12, 10.5), dpi=300)
 
 for ax, country in zip(axes.flatten(), COUNTRIES):
     path = CTRY / country["file"]
     if not path.exists():
         print(f"[WARNING] Missing: {path.name}"); ax.set_visible(False); continue
 
-    df    = load_and_normalize(path)
-    y_max = df["GEP_norm"].max()
-    print(f"{country['title']}: max={y_max:.1f}, mean={df['GEP_norm'].mean():.1f}")
+    df = load_and_normalize(path)
+    
+    # Grafico principale della serie storica
+    ax.plot(df["date"], df["GEP_norm"], color=COL_GEP, linewidth=1.3, alpha=0.95)
+    annotate_events_academic(ax, df, country["events"], font_size=6.5)
 
-    ax.plot(df["date"], df["GEP_norm"], color="#2b7bba", linewidth=2.1)
-    annotate_events(ax, df, country["events"], y_max)
-
+    # Configurazione della scala logaritmica sull'asse Y
+    ax.set_yscale("log")
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{int(x)}"))
+    ax.set_yticks([50, 100, 200, 400, 800])
+    ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+    
+    # Limiti e dettagli estetici minimali
     ax.set_xlim(pd.Timestamp(START), pd.Timestamp(END))
-    ax.set_ylim(0, y_max * 1.45)
-    ax.set_title(country["title"], fontsize=11, fontweight="normal", pad=8)
-    ax.set_ylabel("GEP Index (mean = 100)", fontsize=8)
+    ax.set_ylim(25, 1200)
+    ax.set_title(country["title"], fontsize=11.5, pad=10)
+    
     ax.spines[["top", "right"]].set_visible(False)
-    ax.spines["left"].set_linewidth(0.7)
-    ax.spines["bottom"].set_linewidth(0.7)
-    ax.tick_params(axis="both", labelsize=7, width=0.7)
+    ax.spines["left"].set_color("black")
+    ax.spines["bottom"].set_color("black")
+    
+    ax.tick_params(axis="y", colors=COL_GEP, labelsize=8.5, direction="out")
+    ax.tick_params(axis="x", labelsize=8.5, direction="out", colors="black")
+    
     ax.xaxis.set_major_locator(mdates.YearLocator(5))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-    ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=5, integer=True))
-    ax.axhline(0, color="black", linewidth=0.5)
 
 plt.tight_layout()
-plt.savefig(OUT / "GEP_6Countries_1996_2025.png", dpi=150, bbox_inches="tight")
+plt.savefig(OUT / "GEP_6Countries_1996_2025.png", dpi=300, bbox_inches="tight")
 print("Saved: GEP_6Countries_1996_2025.png")
 plt.close()
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# PLOT 2 — Individual country plots (larger, more readable)
+# PLOT 2 — Grafici individuali ingranditi (Layout orizzontale)
 # ═════════════════════════════════════════════════════════════════════════════
 for country in COUNTRIES:
     path = CTRY / country["file"]
     if not path.exists():
         print(f"[WARNING] Missing: {path.name}"); continue
 
-    df    = load_and_normalize(path)
-    y_max = df["GEP_norm"].max()
+    df = load_and_normalize(path)
 
-    fig, ax = plt.subplots(figsize=(14, 5))
-    ax.plot(df["date"], df["GEP_norm"], color="#2b7bba", linewidth=2.0)
-    ax.fill_between(df["date"], df["GEP_norm"], alpha=0.15, color="#2b7bba")
-    ax.axhline(100, color="gray", linewidth=0.6, linestyle="--", alpha=0.6)
-    annotate_events(ax, df, country["events"], y_max)
+    fig, ax = plt.subplots(figsize=(12, 5.5), dpi=300)
+    ax.plot(df["date"], df["GEP_norm"], color=COL_GEP, linewidth=1.6, alpha=0.95)
+    
+    # Font leggermente più grandi per la versione standalone a pagina singola
+    annotate_events_academic(ax, df, country["events"], font_size=9)
 
+    # Configurazione scala logaritmica Y
+    ax.set_yscale("log")
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{int(x)}"))
+    ax.set_yticks([50, 100, 200, 400, 800])
+    ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+
+    # Dettagli estetici assi e spines
     ax.set_xlim(pd.Timestamp(START), pd.Timestamp(END))
-    ax.set_title(f"{country['title']} — Monthly GEP (normalized to 100, 1996–2025)",
-                 fontsize=13, pad=10)
-    ax.set_ylabel("GEP Index (mean = 100)", fontsize=10)
+    ax.set_ylim(30, 1200)
+    ax.set_title(f"{country['title']} — Monthly GEP Index (1996–2025)", fontsize=13, pad=12)
+    
     ax.spines[["top", "right"]].set_visible(False)
+    ax.spines["left"].set_color("black")
+    ax.spines["bottom"].set_color("black")
+    
+    ax.tick_params(axis="y", colors=COL_GEP, labelsize=10, direction="out")
+    ax.tick_params(axis="x", labelsize=10, direction="out", colors="black")
+    
     ax.xaxis.set_major_locator(mdates.YearLocator(2))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.0f"))
-    ax.grid(axis="y", linestyle="--", linewidth=0.5, alpha=0.4)
 
     short_name = country["file"].split("_")[2]
     plt.tight_layout()
-    plt.savefig(OUT / f"GEP_{short_name}_1996_2025.png", dpi=150, bbox_inches="tight")
+    plt.savefig(OUT / f"GEP_{short_name}_1996_2025.png", dpi=300, bbox_inches="tight")
     print(f"Saved: GEP_{short_name}_1996_2025.png")
     plt.close()
 
-print("\n═══ All country plots saved to output/countries/ ═══")
+print("\n═══ All country plots saved cleanly to output/countries/ ═══")
