@@ -32,6 +32,10 @@ from pathlib import Path
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.stattools import adfuller
 
+import matplotlib
+matplotlib.rcParams['font.family'] = 'serif'
+matplotlib.rcParams['font.serif'] = ['Computer Modern Roman', 'DejaVu Serif', 'Times New Roman']
+matplotlib.rcParams['mathtext.fontset'] = 'cm'
 warnings.filterwarnings("ignore")
 
 try:
@@ -63,20 +67,41 @@ monthly["gep_norm_mo"] = monthly["GEP_monthly"] / monthly_mean * 100  # monthly-
 gep_d = daily_obs["GEP_daily"]
 gep_m = monthly["GEP_monthly"]
 
-PEAKS = {
-    "1997-07": "Asian Financial Crisis",
-    "1998-08": "Russian Ruble Crisis",
+# ─────────────────────────────────────────────────────────────────────────────
+# Event dictionaries
+# ─────────────────────────────────────────────────────────────────────────────
+
+PEAKS_CI = {
+    "1997-07": "Asian Financial\nCrisis",
+    "1998-08": "Russian Ruble\nCrisis",
     "2001-09": "9/11",
     "2003-03": "Iraq War",
     "2008-09": "GFC",
-    "2011-08": "US credit downgrade",
-    "2014-03": "Crimea annexation",
-    "2018-06": "US–China tariffs",
-    "2019-05": "Trade war escalation",
+    "2011-08": "US credit\ndowngrade",
+    "2014-03": "Crimea\nannexation",
+    "2018-06": "US–China\ntariffs",
+    "2019-05": "Trade war\nescalation",
     "2020-03": "COVID-19",
-    "2022-02": "Russia invades Ukraine",
-    "2022-10": "US chip controls on China",
-    "2025-04": "Liberation Day tariffs",
+    "2022-02": "Russia invades\nUkraine",
+    "2022-10": "US chip controls\non China",
+    "2025-04": "Liberation Day\ntariffs",
+}
+
+# Manual offsets (x_days, y_multiplier) — tweak if labels overlap
+PEAK_OFFSETS = {
+    "1997-07": (-300,  1.7),
+    "1998-08": ( 300,  1.7),
+    "2001-09": (   0,  1.5),
+    "2003-03": ( 350,  1.6),
+    "2008-09": (-400,  0.45),
+    "2011-08": ( 350,  0.45),
+    "2014-03": (   0,  1.6),
+    "2018-06": (-350,  1.5),
+    "2019-05": ( 350,  1.5),
+    "2020-03": (-350,  0.45),
+    "2022-02": ( 200,  1.5),
+    "2022-10": ( 450,  0.55),
+    "2025-04": (   0,  1.5),
 }
 
 EVENTS = [
@@ -119,25 +144,13 @@ EVENTS = [
 ]
 
 TARIFF_2025 = [
-    ("2025-01-19", "US threatens tariffs on EU over Greenland"),
-    ("2025-01-20", "Trump inauguration"),
-    ("2025-02-01", "25% tariffs on Canada & Mexico announced"),
-    ("2025-02-10", "Section 232 steel & aluminum reinstated"),
-    ("2025-03-04", "Canada/Mexico tariffs take effect"),
-    ("2025-04-02", "Liberation Day tariffs"),
-    ("2025-04-09", "90-day pause; China raised to 145%"),
-    ("2025-05-12", "US-China Geneva truce; tariffs cut to 30%"),
-    ("2025-05-23", "Trump threatens 50% tariffs on EU"),
-    ("2025-06-05", "US/Israel strike Iran nuclear facilities (Oil spike)"),
-    ("2025-07-09", "Liberation Day pause expires"),
-    ("2025-08-07", "10-41% broad US tariffs take effect globally"),
-    ("2025-09-25", "US introduces new pharma tariffs"),
-    ("2025-10-09", "China export controls: rare earths, lithium, graphite"),
-    ("2025-10-10", "Trump retaliatory tariffs on China"),
-    ("2025-10-23", "US sanctions Rosneft & Lukoil"),
-    ("2025-10-25", "US–China de-escalation talks, Malaysia"),
-    ("2025-11-03", "Supreme Court upholds Trump tariffs"),
-    ("2025-12-12", "US–UK zero-tariff pharma deal"),
+    ("2025-01-20", "Trump\ninauguration"),
+    ("2025-02-01", "25% tariffs on\nCanada & Mexico"),
+    ("2025-04-02", "Liberation Day\ntariffs"),
+    ("2025-05-12", "US–China\nGeneva truce"),
+    ("2025-06-05", "US/Israel strike Iran\n(oil spike)"),
+    ("2025-08-07", "10–41% broad US\ntariffs take effect"),
+    ("2025-10-10", "US–China tariff\nescalation"),
 ]
 
 KEY_EVENTS = {
@@ -150,30 +163,99 @@ KEY_EVENTS = {
     "2025-04-02": "Liberation Day",
 }
 
+COL_GEP, COL_V30, COL_V90 = "#1F5FAD", "#E05C2A", "#5A4FCF"
 
-# ═════════════════════════════════════════════════════════════════════════════
-# PLOT 1 — Monthly index normalized to 100
-# ═════════════════════════════════════════════════════════════════════════════
-fig, ax = plt.subplots(figsize=(16, 5))
-ax.plot(monthly["month"], monthly["gep_norm_mo"], color="#378ADD", linewidth=0.9, alpha=0.9)
-ax.fill_between(monthly["month"], monthly["gep_norm_mo"], alpha=0.15, color="#378ADD")
-ax.axhline(100, color="gray", linewidth=0.6, linestyle="--", alpha=0.6)
+######## Plot 1 — Monthly index (line plot) normalized to 100
 
-for month_str, label in PEAKS.items():
+# 1. Set global font to a classic serif (matches academic papers)
+plt.rcParams["font.family"] = "serif"
+
+# 2. Classic C&I dark navy blue
+COL_GEP = "#2b4c8c"
+
+# Updated Annotation Dictionary
+ANNOTATIONS = {
+    "2001-09": ("9/11",                    (0, 15),   False),
+    "2003-03": ("Iraq\nWar",               (30, 10),  True),
+    # Pushed GFC further down on the Y-axis (from -35 to -55) to clear the line
+    "2008-09": ("GFC",                     (0, -55),  True),
+    # Added an arrow (True) and pushed it higher up on the Y-axis (from 20 to 45)
+    "2014-03": ("Crimea\nannexation",      (0, 45),   True),
+    "2018-06": ("US–China\ntariffs",       (-35, 30), True),
+    "2019-05": ("Trade war\nescalation",   (35, -25), True),
+    "2020-03": ("COVID-19",                (0, -40),  True),
+    "2022-02": ("Russia invades\nUkraine", (-25, 45), True),
+    "2025-04": ("Liberation Day\ntariffs", (20, 15),  False),
+}
+
+# Use a wider aspect ratio (closer to the paper's layout)
+fig, ax = plt.subplots(figsize=(12, 6.5))
+
+# Plot the main line
+ax.plot(monthly["month"], monthly["gep_norm_mo"],
+        color=COL_GEP, linewidth=1.8, alpha=0.95)
+
+# Setup Y-Axis (Log scale, blue labels, no title)
+ax.set_yscale("log")
+ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{int(x)}"))
+ax.set_yticks([50, 100, 200, 400, 600])
+ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+ax.tick_params(axis="y", colors=COL_GEP, labelsize=11, direction="out")
+
+# Setup X-Axis
+ax.set_xlim(pd.Timestamp("1996-01-01"), pd.Timestamp("2026-06-01"))
+ax.xaxis.set_major_locator(mdates.YearLocator(5))
+ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+ax.tick_params(axis="x", labelsize=11, direction="out")
+
+# Spines (Hide top/right)
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+# Keep the left spine black, even though y-ticks are blue
+ax.spines["left"].set_color("black") 
+
+# Apply Annotations
+for month_str, (label, offset, use_arrow) in ANNOTATIONS.items():
     row = monthly[monthly["month"].dt.strftime("%Y-%m") == month_str]
-    if not row.empty:
-        ax.annotate(label, xy=(row["month"].values[0], row["gep_norm_mo"].values[0]),
-                    xytext=(0, 14), textcoords="offset points", fontsize=7.5, ha="center",
-                    arrowprops=dict(arrowstyle="-", color="gray", lw=0.7), color="#333333")
+    if row.empty:
+        continue
+        
+    peak_date = row["month"].values[0]
+    peak_val  = row["gep_norm_mo"].values[0]
 
-ax.set_title("GEP Monthly Index — Robust min-2, normalized to 100 (1996–2025)", fontsize=13, pad=12)
-ax.set_ylabel("GEP Index (avg = 100)", fontsize=10)
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.0f"))
-ax.grid(axis="y", linestyle="--", linewidth=0.5, alpha=0.5)
-ax.spines[["top", "right"]].set_visible(False)
+    # Solid dot on the spike
+    ax.scatter(peak_date, peak_val, s=25, color=COL_GEP, zorder=5, linewidths=0)
+
+    # Base text properties
+    text_kwargs = dict(
+        text=label,
+        xy=(peak_date, peak_val),
+        xytext=offset,
+        textcoords="offset points", # This is the magic fix for label placement
+        fontsize=11,
+        ha="center",
+        va="center",
+        color="black"
+    )
+
+    if use_arrow:
+        ax.annotate(
+            **text_kwargs,
+            arrowprops=dict(
+                arrowstyle="-|>", # Clean academic arrow head
+                color="black", 
+                lw=0.8,
+                mutation_scale=8 # Arrow head size
+            ),
+        )
+    else:
+        ax.annotate(**text_kwargs)
+
+
+
 plt.tight_layout()
-plt.savefig(OUT / "GEP_Monthly_Robust_min2_norm100.png", dpi=150, bbox_inches="tight")
-print(f"Saved: GEP_Monthly_Robust_min2_norm100.png")
+plt.savefig(OUT / "GEP_Monthly_Robust_min2_norm100.png", dpi=300, bbox_inches="tight")
+print("Saved: GEP_Monthly_Robust_min2_norm100.png")
 plt.close()
 
 
@@ -246,43 +328,74 @@ plt.close()
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# PLOT 3 — 2025 zoom
+# PLOT 3 — 2025 zoom (Caldara & Iacoviello style)
 # ═════════════════════════════════════════════════════════════════════════════
+
+# 1. Set global font to classic serif
+plt.rcParams["font.family"] = "serif"
+
+# 2. Classic C&I dark navy blue
+COL_GEP = "#2b4c8c"
+
 daily_2025 = daily_obs[(daily_obs["date"] >= "2025-01-01") &
                        (daily_obs["date"] <= "2025-12-31")].copy()
 
-fig, ax = plt.subplots(figsize=(18, 6))
-ax.scatter(daily_2025["date"], daily_2025["gep_norm"],
-           s=22, color="#27AE60", alpha=0.45, linewidths=0, zorder=2, label="Daily GEP (norm. 100)")
+# Adjusted figure size for a cleaner aspect ratio
+fig, ax = plt.subplots(figsize=(12, 5.5))
+
 if not daily_2025.empty:
     roll = daily_2025.set_index("date")["gep_norm"].rolling("7D").mean()
-    ax.plot(roll.index, roll.values, color="#1A6B3C", linewidth=1.8, alpha=0.85, zorder=3,
-            label="7-day rolling avg")
-ax.axhline(100, color="gray", linewidth=0.7, linestyle="--", alpha=0.6)
+    ax.plot(roll.index, roll.values, color=COL_GEP, linewidth=1.8, alpha=0.95, zorder=3)
 
-y_fracs = [0.97, 0.88, 0.97, 0.88, 0.97, 0.88, 0.97, 0.88, 0.97]
-for i, (date_str, label) in enumerate(TARIFF_2025):
-    dt = pd.to_datetime(date_str)
-    ax.axvline(dt, color="#C0392B", linewidth=0.9, linestyle="--", alpha=0.5, zorder=1)
-    ax.text(dt, y_fracs[i % len(y_fracs)], label,
-            transform=ax.get_xaxis_transform(), fontsize=7.5, ha="center", va="top",
-            color="#8B0000", rotation=90,
-            bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.7))
+# Setup Y-Axis (Log scale, blue labels, no title)
+ax.set_yscale("log")
+ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{int(x)}"))
+ax.set_yticks([50, 100, 200, 400])
+ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+ax.tick_params(axis="y", colors=COL_GEP, labelsize=11, direction="out")
 
+# Setup X-Axis
 ax.set_xlim(pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-31"))
 ax.xaxis.set_major_locator(mdates.MonthLocator())
 ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
-ax.set_ylabel("GEP Index (avg = 100)", fontsize=10)
-ax.set_title("Daily GEP Index — 2025 Zoom", fontsize=13, pad=12)
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.0f"))
-ax.grid(axis="y", linestyle="--", linewidth=0.5, alpha=0.4)
-ax.spines[["top", "right"]].set_visible(False)
-ax.legend(fontsize=9, framealpha=0.75, loc="upper left")
+ax.tick_params(axis="x", labelsize=11, direction="out")
+
+# Spines (Hide top/right, keep bottom/left black)
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.spines["left"].set_color("black") 
+
+# Event Annotations 
+y_top    = 0.95
+y_bottom = 0.05
+
+for i, (date_str, label) in enumerate(TARIFF_2025):
+    dt = pd.to_datetime(date_str)
+    if dt < pd.Timestamp("2025-01-01") or dt > pd.Timestamp("2025-12-31"):
+        continue
+
+    # Subtle dotted line instead of bright red
+    ax.axvline(dt, color="black", linewidth=0.8, linestyle=":", alpha=0.5, zorder=1)
+
+    y_frac = y_top if i % 2 == 0 else y_bottom
+    va     = "top" if i % 2 == 0 else "bottom"
+
+    # Clean text without colored bounding boxes
+    ax.text(
+        dt - pd.Timedelta(days=2), y_frac, label, # Shifted slightly left so the line doesn't strike through the text
+        transform=ax.get_xaxis_transform(),
+        fontsize=10,
+        ha="right", # Align right so it hugs the left side of the vertical line
+        va=va,
+        color="black",
+        rotation=90,
+    )
+
+
 plt.tight_layout()
-plt.savefig(OUT / "GEP_Daily_2025_Zoom_norm100.png", dpi=160, bbox_inches="tight")
+plt.savefig(OUT / "GEP_Daily_2025_Zoom_norm100.png", dpi=300, bbox_inches="tight")
 print("Saved: GEP_Daily_2025_Zoom_norm100.png")
 plt.close()
-
 
 # ═════════════════════════════════════════════════════════════════════════════
 # DESCRIPTIVE STATISTICS (printed to console)
@@ -314,9 +427,9 @@ summary_stats(gep_m_idx, "Monthly GEP")
 # ═════════════════════════════════════════════════════════════════════════════
 # PLOT 4 — Rolling volatility
 # ═════════════════════════════════════════════════════════════════════════════
-daily_obs["roll_vol_30d"] = gep_d.rolling(30,  min_periods=20).std()
-daily_obs["roll_vol_90d"] = gep_d.rolling(90,  min_periods=60).std()
-daily_obs["roll_mean_90d"] = gep_d.rolling(90, min_periods=60).mean()
+daily_obs["roll_vol_30d"]  = gep_d.rolling(30,  min_periods=20).std()
+daily_obs["roll_vol_90d"]  = gep_d.rolling(90,  min_periods=60).std()
+daily_obs["roll_mean_90d"] = gep_d.rolling(90,  min_periods=60).mean()
 
 annual = (daily_obs.set_index("date")["GEP_daily"]
           .resample("YS").agg(mean="mean", std="std",
@@ -329,8 +442,6 @@ def add_key_events(ax, dates, y_top, fontsize=6.5):
             ax.axvline(xd, color="gray", lw=0.6, ls="--", alpha=0.55)
             ax.text(xd, y_top, label, rotation=90, fontsize=fontsize,
                     va="top", color="#555555", ha="right")
-
-COL_GEP, COL_V30, COL_V90 = "#378ADD", "#E05C2A", "#5A4FCF"
 
 fig, axes = plt.subplots(3, 1, figsize=(16, 11), sharex=True,
                          gridspec_kw={"height_ratios": [2.5, 1.2, 1.2]})
@@ -413,10 +524,10 @@ plt.close()
 # PLOT 6 — ACF / PACF
 # ═════════════════════════════════════════════════════════════════════════════
 fig, axes = plt.subplots(2, 2, figsize=(14, 8))
-plot_acf( gep_d.dropna(), lags=60, ax=axes[0, 0], color=COL_GEP,  title="Daily GEP — ACF (60 lags)")
-plot_pacf(gep_d.dropna(), lags=60, ax=axes[0, 1], color=COL_GEP,  title="Daily GEP — PACF (60 lags)", method="ywm")
-plot_acf( gep_m.dropna(), lags=36, ax=axes[1, 0], color="#2CA02C", title="Monthly GEP — ACF (36 lags)")
-plot_pacf(gep_m.dropna(), lags=36, ax=axes[1, 1], color="#2CA02C", title="Monthly GEP — PACF (36 lags)", method="ywm")
+plot_acf( gep_d.dropna(), lags=60, ax=axes[0, 0], color=COL_GEP,   title="Daily GEP — ACF (60 lags)")
+plot_pacf(gep_d.dropna(), lags=60, ax=axes[0, 1], color=COL_GEP,   title="Daily GEP — PACF (60 lags)", method="ywm")
+plot_acf( gep_m.dropna(), lags=36, ax=axes[1, 0], color="#2CA02C",  title="Monthly GEP — ACF (36 lags)")
+plot_pacf(gep_m.dropna(), lags=36, ax=axes[1, 1], color="#2CA02C",  title="Monthly GEP — PACF (36 lags)", method="ywm")
 for ax in axes.flat:
     ax.spines[["top", "right"]].set_visible(False)
     ax.set_xlabel("Lag", fontsize=9)
