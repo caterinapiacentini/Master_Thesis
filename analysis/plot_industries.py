@@ -30,7 +30,6 @@ import warnings
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-import pandas_datareader.data as web
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from pathlib import Path
@@ -53,8 +52,7 @@ GPR_EXPORT = EXT / "data_gpr_export.xls"
 GPR_DAILY_PATH   = GPR_RECENT if GPR_RECENT.exists() else GPR_EXPORT
 GPR_MONTHLY_PATH = GPR_EXPORT
 
-JKP_DAILY   = EXT / "[usa]_[all_factors]_[daily]_[vw_cap].csv"
-JKP_MONTHLY = EXT / "[usa]_[all_factors]_[monthly]_[vw_cap].csv"
+CACHE = EXT / "cached"
 
 DARK_BLUE  = "#1a3a5c"
 LIGHT_BLUE = "#a8c4e0"
@@ -98,13 +96,11 @@ dgpr_monthly = diff_series(gpr_monthly, "GPR_monthly")
 # ─────────────────────────────────────────────────────────────────────────────
 # Download FF data
 # ─────────────────────────────────────────────────────────────────────────────
-print("Downloading Fama-French data...")
-ind_d   = web.DataReader("49_Industry_Portfolios_Daily",    "famafrench", start="1990-01-01")[0] / 100.0
-ff3_d   = web.DataReader("F-F_Research_Data_Factors_daily", "famafrench", start="1990-01-01")[0] / 100.0
-ind_m_r = web.DataReader("49_Industry_Portfolios",   "famafrench", start="1990-01-01")[0] / 100.0
-ff3_m_r = web.DataReader("F-F_Research_Data_Factors","famafrench", start="1990-01-01")[0] / 100.0
-ind_m = ind_m_r.copy(); ind_m.index = ind_m.index.to_timestamp()
-ff3_m = ff3_m_r.copy(); ff3_m.index = ff3_m.index.to_timestamp()
+print("Loading Fama-French data from cache...")
+ind_d = pd.read_csv(CACHE / "ff49_daily.csv",   index_col="Date", parse_dates=True) / 100.0
+ff3_d = pd.read_csv(CACHE / "ff3_daily.csv",    index_col="Date", parse_dates=True) / 100.0
+ind_m = pd.read_csv(CACHE / "ff49_monthly.csv", index_col="Date", parse_dates=True) / 100.0
+ff3_m = pd.read_csv(CACHE / "ff3_monthly.csv",  index_col="Date", parse_dates=True) / 100.0
 
 FF49_NAMES = {
     "Agric": "Agriculture",           "Food":  "Food Products",
@@ -364,16 +360,20 @@ def plot_factor_exposure(df, beta_col, pval_col, title, filename, note=""):
     plt.close()
 
 
-if JKP_DAILY.exists() and JKP_MONTHLY.exists():
-    factors_d = load_jkp(JKP_DAILY,   freq="daily")
-    factors_m = load_jkp(JKP_MONTHLY, freq="monthly")
+if (CACHE / "jkp_daily_factors.csv").exists() and (CACHE / "jkp_monthly_factors.csv").exists():
+    factors_d = pd.read_csv(CACHE / "jkp_daily_factors.csv",   index_col="Date", parse_dates=True)
+    factors_m = pd.read_csv(CACHE / "jkp_monthly_factors.csv", index_col="Date", parse_dates=True)
 
     dgpr_d_jkp = diff_series(gpr_daily,   "GPR_daily")
     dgep_d_jkp = diff_series(daily_gep,   "GEP_daily")
 
-    print("\nRunning JKP factor regressions...")
+    print("\nRunning JKP factor regressions — daily...")
     res_jkp_d     = run_factor_regressions(daily_gep["GEP_daily"],   factors_d, gpr_daily,   monthly=False)
     res_jkp_d_dlt = run_factor_regressions(dgep_d_jkp["GEP_daily"],  factors_d, dgpr_d_jkp,  monthly=False)
+
+    print("\nRunning JKP factor regressions — monthly...")
+    res_jkp_m     = run_factor_regressions(monthly_gep["GEP_monthly"], factors_m, gpr_monthly, monthly=True)
+    res_jkp_m_dlt = run_factor_regressions(dgep_monthly["GEP_monthly"], factors_m, dgpr_monthly, monthly=True)
 
     note_lev = "Controls: GPR only (levels). Beta on GEP (×10 000, std). SE: HC3."
     note_dlt = "Controls: ΔGPR only. Beta on ΔGEP (×10 000, std). SE: HC3."
@@ -393,15 +393,8 @@ if JKP_DAILY.exists() and JKP_MONTHLY.exists():
          OUT / "GEP_Factor_Predic_Daily_DELTA.png", f"Daily — {note_dlt}"),
     ]:
         plot_factor_exposure(res, beta_c, pval_c, title, fname, note)
-else:
-    print(f"\n[WARNING] JKP factor files not found in {EXT}.")
-    print("  Expected: [usa]_[all_factors]_[daily]_[vw_cap].csv")
-    print("  Expected: [usa]_[all_factors]_[monthly]_[vw_cap].csv")
-    print("  Skipping JKP factor regressions.")
 
-print("\n═══ All industry/factor plots saved to output/industries/ ═══")
-
-for res, label_contemp, label_predic in [
+    for res, label_contemp, label_predic in [
         (res_jkp_m,
          "JKP MONTHLY — LEVELS — CONTEMPORANEOUS",
          "JKP MONTHLY — LEVELS — PREDICTIVE"),
@@ -430,3 +423,7 @@ for res, label_contemp, label_predic in [
             print(f"  {row['Factor']:<45}  "
                   f"{row['Predic_Beta']:>+10.6f}  "
                   f"p={row['Predic_Pval']:>6.3f}  {s}")
+
+else:
+    print(f"\n[WARNING] JKP cached files not found. Run fetch_data.py first.")
+    print("  Skipping JKP factor regressions.")

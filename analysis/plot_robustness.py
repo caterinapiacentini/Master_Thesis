@@ -33,6 +33,7 @@ import matplotlib.ticker as ticker
 import matplotlib.dates as mdates
 from pathlib import Path
 from scipy import stats
+import statsmodels.api as sm
 
 matplotlib.rcParams['font.family'] = 'serif'
 warnings.filterwarnings("ignore")
@@ -319,3 +320,280 @@ else:
           f"Place it in data/robustness/ to generate this plot.")
 
 print("\n═══ All robustness plots saved to output/robustness/ ═══")
+
+# ═════════════════════════════════════════════════════════════════════════════
+# REGRESSIONS — FF49 Industries & JKP Factors across robustness variants
+# ═════════════════════════════════════════════════════════════════════════════
+EXT              = REPO / "data" / "external"
+CACHE            = EXT / "cached"
+GPR_RECENT       = EXT / "data_gpr_daily_recent.xls"
+GPR_EXPORT       = EXT / "data_gpr_export.xls"
+GPR_DAILY_PATH   = GPR_RECENT if GPR_RECENT.exists() else GPR_EXPORT
+GPR_MONTHLY_PATH = GPR_EXPORT
+
+SIG_LEVEL = 0.10
+
+# ── GPR ──────────────────────────────────────────────────────────────────────
+gpr_d_raw = pd.read_excel(GPR_DAILY_PATH)
+gpr_d_raw["date"] = pd.to_datetime(gpr_d_raw["date"], dayfirst=True)
+gpr_daily_reg = (gpr_d_raw[["date", "GPRD"]]
+                 .rename(columns={"GPRD": "GPR_daily"})
+                 .set_index("date").sort_index())
+
+gpr_m_raw = pd.read_excel(GPR_MONTHLY_PATH)
+gpr_m_raw["month"] = pd.to_datetime(gpr_m_raw["month"], dayfirst=True)
+gpr_monthly_reg = (gpr_m_raw[["month", "GPR"]]
+                   .rename(columns={"GPR": "GPR_monthly"})
+                   .set_index("month").sort_index())
+
+
+def _diff(df, col):
+    d = df[[col]].copy()
+    d[col] = d[col].diff()
+    return d.dropna()
+
+
+dgpr_daily_reg   = _diff(gpr_daily_reg,   "GPR_daily")
+dgpr_monthly_reg = _diff(gpr_monthly_reg, "GPR_monthly")
+
+# ── Fama-French data ──────────────────────────────────────────────────────────
+print("\nLoading Fama-French data from cache...")
+ind_d = pd.read_csv(CACHE / "ff49_daily.csv",   index_col="Date", parse_dates=True) / 100.0
+ff3_d = pd.read_csv(CACHE / "ff3_daily.csv",    index_col="Date", parse_dates=True) / 100.0
+ind_m = pd.read_csv(CACHE / "ff49_monthly.csv", index_col="Date", parse_dates=True) / 100.0
+ff3_m = pd.read_csv(CACHE / "ff3_monthly.csv",  index_col="Date", parse_dates=True) / 100.0
+
+FF49_NAMES = {
+    "Agric": "Agriculture",              "Food":  "Food Products",
+    "Soda":  "Candy & Soda",            "Beer":  "Beer & Liquor",
+    "Smoke": "Tobacco Products",         "Toys":  "Recreation",
+    "Fun":   "Entertainment",            "Books": "Printing & Publishing",
+    "Hshld": "Consumer Goods",           "Clths": "Apparel",
+    "Hlth":  "Healthcare",               "MedEq": "Medical Equipment",
+    "Drugs": "Pharmaceutical Products",  "Chems": "Chemicals",
+    "Rubbr": "Rubber & Plastic",         "Txtls": "Textiles",
+    "BldMt": "Construction Materials",   "Cnstr": "Construction",
+    "Steel": "Steel Works",              "FabPr": "Fabricated Products",
+    "Mach":  "Machinery",                "ElcEq": "Electrical Equipment",
+    "Autos": "Automobiles & Trucks",     "Aero":  "Aircraft",
+    "Ships": "Shipbuilding & Railroad Equip.", "Guns": "Defense",
+    "Gold":  "Precious Metals & Mining", "Mines": "Industrial Metal Mining",
+    "Coal":  "Coal",                     "Oil":   "Petroleum & Natural Gas",
+    "Util":  "Utilities",                "Telcm": "Telecommunications",
+    "PerSv": "Personal Services",        "BusSv": "Business Services",
+    "Hardw": "Computers & Hardware",     "Softw": "Computer Software",
+    "Chips": "Electronic Equipment",     "LabEq": "Lab Equipment",
+    "Paper": "Paper & Paper Products",   "Boxes": "Shipping Containers",
+    "Trans": "Transportation",           "Whlsl": "Wholesale",
+    "Rtail": "Retail",                   "Meals": "Restaurants, Hotels & Motels",
+    "Banks": "Banking",                  "Insur": "Insurance",
+    "RlEst": "Real Estate",              "Fin":   "Finance",
+    "Other": "Other",
+}
+
+def _full_name(short):
+    return FF49_NAMES.get(short.strip(), short.strip())
+
+
+def _stars(p):
+    return "***" if p < 0.01 else ("**" if p < 0.05 else ("*" if p < 0.10 else ""))
+
+
+def _run_ind_regressions(ind_df, ff_df, gep_series, gpr_series):
+    results = []
+    for industry in ind_df.columns:
+        df = pd.concat([ind_df[[industry]], gep_series, ff_df, gpr_series], axis=1).dropna()
+        df.columns = ["RET", "GEP", "MktRF", "SMB", "HML", "RF", "GPR"]
+        df["y"]       = df["RET"] - df["RF"]
+        df["gep_var"] = df["GEP"] * 100
+        ctrl = ["MktRF", "SMB", "HML", "GPR"]
+
+        X1 = sm.add_constant(df[["gep_var"] + ctrl])
+        m1 = sm.OLS(df["y"], X1).fit(cov_type="HC3")
+
+        df["gep_lag"] = df["gep_var"].shift(1)
+        df_lag = df.dropna()
+        X2 = sm.add_constant(df_lag[["gep_lag"] + ctrl])
+        m2 = sm.OLS(df_lag["y"], X2).fit(cov_type="HC3")
+
+        results.append({
+            "Industry":     industry.strip(),
+            "Contemp_Beta": m1.params["gep_var"],
+            "Contemp_Pval": m1.pvalues["gep_var"],
+            "Predic_Beta":  m2.params["gep_lag"],
+            "Predic_Pval":  m2.pvalues["gep_lag"],
+        })
+    return pd.DataFrame(results)
+
+
+def _run_factor_regressions(gep_series, factor_df, gpr_ctrl):
+    results = []
+    for factor in factor_df.columns:
+        df = pd.concat([factor_df[factor], gep_series, gpr_ctrl], axis=1).dropna()
+        if len(df) < 10:
+            continue
+        df.columns = ["FAC", "GEP", "GPR"]
+        df["gep_pct"] = df["GEP"] * 100
+
+        X1 = sm.add_constant(df[["gep_pct", "GPR"]])
+        m1 = sm.OLS(df["FAC"], X1).fit(cov_type="HC3")
+
+        df["gep_lag"] = df["gep_pct"].shift(1)
+        df_lag = df.dropna()
+        X2 = sm.add_constant(df_lag[["gep_lag", "GPR"]])
+        m2 = sm.OLS(df_lag["FAC"], X2).fit(cov_type="HC3")
+
+        results.append({
+            "Factor":       factor,
+            "Contemp_Beta": m1.params["gep_pct"],
+            "Contemp_Pval": m1.pvalues["gep_pct"],
+            "Predic_Beta":  m2.params["gep_lag"],
+            "Predic_Pval":  m2.pvalues["gep_lag"],
+        })
+    return pd.DataFrame(results)
+
+
+def _print_ind_results(res, label_contemp, label_predic):
+    print("\n" + "=" * 72)
+    print(label_contemp)
+    print("=" * 72)
+    print(f"  {'Industry':<40}  {'Beta':>12}  {'p':>8}  Sig")
+    print("  " + "-" * 68)
+    for _, row in res.sort_values("Contemp_Pval").iterrows():
+        s = _stars(row["Contemp_Pval"])
+        print(f"  {_full_name(row['Industry']):<40}  "
+              f"{row['Contemp_Beta']:>+12.6f}  "
+              f"p={row['Contemp_Pval']:>6.3f}  {s}")
+
+    print("\n" + "=" * 72)
+    print(label_predic)
+    print("=" * 72)
+    print(f"  {'Industry':<40}  {'Beta':>12}  {'p':>8}  Sig")
+    print("  " + "-" * 68)
+    for _, row in res.sort_values("Predic_Pval").iterrows():
+        s = _stars(row["Predic_Pval"])
+        print(f"  {_full_name(row['Industry']):<40}  "
+              f"{row['Predic_Beta']:>+12.6f}  "
+              f"p={row['Predic_Pval']:>6.3f}  {s}")
+
+
+def _print_fac_results(res, label_contemp, label_predic):
+    print("\n" + "=" * 72)
+    print(label_contemp)
+    print("=" * 72)
+    print(f"  {'Factor':<45}  {'Beta':>12}  {'p':>8}  Sig")
+    print("  " + "-" * 72)
+    for _, row in res.sort_values("Contemp_Pval").iterrows():
+        s = _stars(row["Contemp_Pval"])
+        print(f"  {row['Factor']:<45}  "
+              f"{row['Contemp_Beta']:>+12.6f}  "
+              f"p={row['Contemp_Pval']:>6.3f}  {s}")
+
+    print("\n" + "=" * 72)
+    print(label_predic)
+    print("=" * 72)
+    print(f"  {'Factor':<45}  {'Beta':>12}  {'p':>8}  Sig")
+    print("  " + "-" * 72)
+    for _, row in res.sort_values("Predic_Pval").iterrows():
+        s = _stars(row["Predic_Pval"])
+        print(f"  {row['Factor']:<45}  "
+              f"{row['Predic_Beta']:>+12.6f}  "
+              f"p={row['Predic_Pval']:>6.3f}  {s}")
+
+
+# ── Load JKP factors once ─────────────────────────────────────────────────────
+_jkp_cache = CACHE / "jkp_daily_factors.csv"
+factors_d = pd.read_csv(_jkp_cache, index_col="Date", parse_dates=True) if _jkp_cache.exists() else None
+if factors_d is None:
+    print(f"\n[WARNING] JKP cache not found — factor regressions skipped. Run fetch_data.py first.")
+
+# ── Robustness variants ───────────────────────────────────────────────────────
+ROB_VARIANTS = [
+    ("Baseline (min-2)",
+     GEP    / "GEP_Daily_Robust_min2.csv",
+     GEP    / "GEP_Monthly_Robust_min2.csv"),
+    ("Robust min-1",
+     ROBUST / "GEP_Daily_min1.csv",
+     ROBUST / "GEP_Monthly_min1.csv"),
+    ("Robust min-3",
+     ROBUST / "GEP_Daily_Robust_min3.csv",
+     ROBUST / "GEP_Monthly_Robust_min3.csv"),
+    ("Robust min-4",
+     ROBUST / "GEP_Daily_Robust_min4.csv",
+     ROBUST / "GEP_Monthly_Robust_min4.csv"),
+    ("GTM v2",
+     ROBUST / "GEP_Daily_gtm_v2.csv",
+     ROBUST / "GEP_Monthly_gtm_v2.csv"),
+]
+
+for variant_name, daily_path, monthly_path in ROB_VARIANTS:
+    if not daily_path.exists() or not monthly_path.exists():
+        print(f"\n[SKIP] {variant_name}: data files not found.")
+        continue
+
+    print(f"\n\n{'#'*72}")
+    print(f"# VARIANT: {variant_name}")
+    print(f"{'#'*72}")
+
+    # Load daily GEP
+    d_raw = pd.read_csv(daily_path)
+    d_raw["date"] = pd.to_datetime(d_raw["date"])
+    gep_d = d_raw.set_index("date")[["GEP_daily"]].sort_index()
+    dgep_d = _diff(gep_d, "GEP_daily")
+
+    # Load monthly GEP
+    m_raw = pd.read_csv(monthly_path)
+    m_raw["month"] = pd.to_datetime(m_raw["month"])
+    gep_m = m_raw.set_index("month")[["GEP_monthly"]].sort_index()
+    dgep_m = _diff(gep_m, "GEP_monthly")
+
+    # ── FF49 daily ────────────────────────────────────────────────────────────
+    print(f"\nRunning FF49 daily regressions [{variant_name}]...")
+    res_d_lev = _run_ind_regressions(ind_d, ff3_d, gep_d,  gpr_daily_reg)
+    res_d_dlt = _run_ind_regressions(ind_d, ff3_d, dgep_d, dgpr_daily_reg)
+
+    _print_ind_results(
+        res_d_lev,
+        f"FF49 DAILY — LEVELS — CONTEMP [{variant_name}]",
+        f"FF49 DAILY — LEVELS — PREDICTIVE [{variant_name}]",
+    )
+    _print_ind_results(
+        res_d_dlt,
+        f"FF49 DAILY — FIRST DIFF — CONTEMP [{variant_name}]",
+        f"FF49 DAILY — FIRST DIFF — PREDICTIVE [{variant_name}]",
+    )
+
+    # ── FF49 monthly ──────────────────────────────────────────────────────────
+    print(f"\nRunning FF49 monthly regressions [{variant_name}]...")
+    res_m_lev = _run_ind_regressions(ind_m, ff3_m, gep_m,  gpr_monthly_reg)
+    res_m_dlt = _run_ind_regressions(ind_m, ff3_m, dgep_m, dgpr_monthly_reg)
+
+    _print_ind_results(
+        res_m_lev,
+        f"FF49 MONTHLY — LEVELS — CONTEMP [{variant_name}]",
+        f"FF49 MONTHLY — LEVELS — PREDICTIVE [{variant_name}]",
+    )
+    _print_ind_results(
+        res_m_dlt,
+        f"FF49 MONTHLY — FIRST DIFF — CONTEMP [{variant_name}]",
+        f"FF49 MONTHLY — FIRST DIFF — PREDICTIVE [{variant_name}]",
+    )
+
+    # ── JKP factors daily ─────────────────────────────────────────────────────
+    if factors_d is not None:
+        print(f"\nRunning JKP factor regressions [{variant_name}]...")
+        res_f_lev = _run_factor_regressions(gep_d["GEP_daily"],  factors_d, gpr_daily_reg)
+        res_f_dlt = _run_factor_regressions(dgep_d["GEP_daily"], factors_d, dgpr_daily_reg)
+
+        _print_fac_results(
+            res_f_lev,
+            f"JKP FACTORS DAILY — LEVELS — CONTEMP [{variant_name}]",
+            f"JKP FACTORS DAILY — LEVELS — PREDICTIVE [{variant_name}]",
+        )
+        _print_fac_results(
+            res_f_dlt,
+            f"JKP FACTORS DAILY — FIRST DIFF — CONTEMP [{variant_name}]",
+            f"JKP FACTORS DAILY — FIRST DIFF — PREDICTIVE [{variant_name}]",
+        )
+
+print("\n═══ Robustness regressions complete ═══")

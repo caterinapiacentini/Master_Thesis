@@ -25,9 +25,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as mticker
-import yfinance as yf
 import statsmodels.api as sm
-import pandas_datareader.data as web
 from pathlib import Path
 from scipy import stats
 from statsmodels.tsa.stattools import grangercausalitytests
@@ -42,7 +40,8 @@ REPO = next((p for p in [HERE, *HERE.parents] if (p / "data" / "gep_us").exists(
 DATA = REPO / "data"
 GEP  = DATA / "gep_us"
 EXT  = DATA / "external"
-OUT  = REPO / "analysis" / "output" / "comparisons"
+OUT   = REPO / "analysis" / "output" / "comparisons"
+CACHE = EXT / "cached"
 OUT.mkdir(parents=True, exist_ok=True)
 
 GPR_RECENT = EXT / "data_gpr_daily_recent.xls"
@@ -426,32 +425,10 @@ plt.close()
 # ═════════════════════════════════════════════════════════════════════════════
 print("\n" + "="*60 + "\nGEP vs VIX\n" + "="*60)
 
-print("Downloading VIX...")
-vix_mo = yf.download("^VIX", start="1996-01-01", end="2025-12-31", interval="1mo",
-                     auto_adjust=False, progress=False).reset_index()
-if isinstance(vix_mo.columns, pd.MultiIndex):
-    vix_mo.columns = vix_mo.columns.get_level_values(0)
-vix_mo = vix_mo[["Date", "Close"]].dropna().copy()
-vix_mo.rename(columns={"Close": "VIX"}, inplace=True)
-vix_mo["Date"] = pd.to_datetime(vix_mo["Date"]).dt.to_period("M").dt.to_timestamp()
-
-vix_d = yf.download("^VIX", start="1996-01-01", end="2025-12-31", interval="1d",
-                    auto_adjust=False, progress=False).reset_index()
-if isinstance(vix_d.columns, pd.MultiIndex):
-    vix_d.columns = vix_d.columns.get_level_values(0)
-vix_d = vix_d[["Date", "Close"]].dropna().rename(columns={"Close": "VIX"})
-vix_d["Date"] = pd.to_datetime(vix_d["Date"])
-
-print("Downloading FF3 monthly...")
-ff3_mo = web.DataReader("F-F_Research_Data_Factors", "famafrench",
-                        start="1996-01-01", end="2025-12-31")[0].reset_index()
-ff3_mo["Date"] = ff3_mo["Date"].dt.to_timestamp()
-
-print("Downloading FF3 daily...")
-ff3_d = web.DataReader("F-F_Research_Data_Factors_daily", "famafrench",
-                       start="1996-01-01", end="2025-12-31")[0].reset_index()
-ff3_d.rename(columns={"Date": "Date"}, inplace=True)
-ff3_d["Date"] = pd.to_datetime(ff3_d["Date"])
+vix_mo = pd.read_csv(CACHE / "vix_monthly.csv", parse_dates=["Date"])
+vix_d  = pd.read_csv(CACHE / "vix_daily.csv",   parse_dates=["Date"])
+ff3_mo = pd.read_csv(CACHE / "ff3_monthly.csv", parse_dates=["Date"])
+ff3_d  = pd.read_csv(CACHE / "ff3_daily.csv",   parse_dates=["Date"])
 
 gpr_mo_gep = (gpr_raw_df["GPRD"].resample("MS").mean().rename("GPR")
               .reset_index().rename(columns={"date": "Date"}))
@@ -533,28 +510,10 @@ for name, (s, e) in SUBS_D_VIX.items():
 # GEP vs S&P 500
 # ═════════════════════════════════════════════════════════════════════════════
 print("\n" + "="*60 + "\nGEP vs S&P 500\n" + "="*60)
-
-print("Downloading S&P 500...")
-sp500_mo = yf.download("^GSPC", start="1995-12-01", end="2025-12-31",
-                       interval="1mo", auto_adjust=True, progress=False)[["Close"]].copy()
-sp500_mo.index = sp500_mo.index.to_period("M").to_timestamp()
-sp500_mo.columns = ["sp500"]
-sp500_mo = sp500_mo.sort_index()
-sp500_mo["log_ret"] = np.log(sp500_mo["sp500"] / sp500_mo["sp500"].shift(1))
-sp500_mo = sp500_mo.dropna()
-
-sp500_d = yf.download("^GSPC", start="1995-12-01", end="2025-12-31",
-                      interval="1d", auto_adjust=True, progress=False)[["Close"]].copy()
-sp500_d.index = pd.to_datetime(sp500_d.index)
-sp500_d.columns = ["sp500"]
-sp500_d["log_ret"] = np.log(sp500_d["sp500"] / sp500_d["sp500"].shift(1))
-sp500_d = sp500_d.dropna()
-
-ff3_mo_raw = web.DataReader("F-F_Research_Data_Factors", "famafrench",
-                            start="1995-12-01", end="2025-12-31")[0]
-ff3_mo_raw.index = ff3_mo_raw.index.to_timestamp()
-ff3_d_raw  = web.DataReader("F-F_Research_Data_Factors_daily", "famafrench",
-                            start="1995-12-01", end="2025-12-31")[0]
+sp500_mo   = pd.read_csv(CACHE / "sp500_monthly.csv", index_col="Date", parse_dates=True).sort_index()
+sp500_d    = pd.read_csv(CACHE / "sp500_daily.csv",   index_col="Date", parse_dates=True).sort_index()
+ff3_mo_raw = ff3_mo.set_index("Date")
+ff3_d_raw  = ff3_d.set_index("Date")
 
 gpr_mo_sp = gpr_raw_df["GPRD"].resample("MS").mean().rename("GPR")
 
