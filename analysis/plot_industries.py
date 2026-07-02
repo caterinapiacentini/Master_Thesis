@@ -171,28 +171,33 @@ def plot_exposure(df, beta_col, pval_col, title, filename, subtitle_note=""):
     plot_df = plot_df.sort_values("exposure", ascending=False).reset_index(drop=True)
     colors  = [DARK_BLUE if s else LIGHT_BLUE for s in plot_df["sig"]]
 
-    fig, ax = plt.subplots(figsize=(16, 10))
+    # Square canvas (49 industries need ~10in of vertical room at a legible
+    # font, so the square is sized to that rather than to \textwidth; it
+    # will be scaled down a bit more on insertion than a width-matched
+    # figure, but stays square and keeps the per-row spacing that avoids
+    # label collisions).
+    fig, ax = plt.subplots(figsize=(10, 10))
     ax.barh(range(len(plot_df)), plot_df["exposure"],
-            color=colors, edgecolor="white", linewidth=0.3, height=0.7)
+            color=colors, edgecolor="white", linewidth=0.3, height=0.72)
     ax.set_yticks([])
     ax.invert_yaxis()
     x_min, x_max = plot_df["exposure"].min(), plot_df["exposure"].max()
     pad = (x_max - x_min) * 0.012
     for i, (val, name) in enumerate(zip(plot_df["exposure"], plot_df["label"])):
-        if val >= 0: ax.text(val + pad, i, name, va="center", ha="left",  fontsize=7.2, color="black")
-        else:        ax.text(val - pad, i, name, va="center", ha="right", fontsize=7.2, color="black")
-    ax.set_xlim(x_min - (x_max - x_min) * 0.28, x_max + (x_max - x_min) * 0.28)
+        if val >= 0: ax.text(val + pad, i, name, va="center", ha="left",  fontsize=8, color="black")
+        else:        ax.text(val - pad, i, name, va="center", ha="right", fontsize=8, color="black")
+    ax.set_xlim(x_min - (x_max - x_min) * 0.34, x_max + (x_max - x_min) * 0.34)
     ax.axvline(0, color="black", linewidth=0.8, linestyle="--")
-    ax.set_xlabel("Average Exposure (standardised, ×10 000 bps)", fontsize=10)
-    ax.set_title(title, fontsize=12, pad=12)
+    ax.set_xlabel("Average Exposure (standardised, ×10 000 bps)", fontsize=10.5)
+    ax.set_title(title, fontsize=13, pad=14)
     ax.legend(handles=[
         mpatches.Patch(color=DARK_BLUE,  label=f"Significant (p < {SIG_LEVEL})"),
         mpatches.Patch(color=LIGHT_BLUE, label=f"Not significant (p ≥ {SIG_LEVEL})"),
-    ], loc="lower right", fontsize=8)
+    ], loc="lower right", fontsize=8.5)
     if subtitle_note:
-        fig.text(0.5, 0.01, subtitle_note, ha="center", fontsize=7.5, style="italic")
-    plt.tight_layout(rect=[0, 0.04, 1, 1])
-    plt.savefig(filename, dpi=200, bbox_inches="tight")
+        fig.text(0.5, 0.005, subtitle_note, ha="center", fontsize=8, style="italic")
+    plt.tight_layout(rect=[0, 0.025, 1, 1])
+    plt.savefig(filename, dpi=300, bbox_inches="tight")
     print(f"Saved: {filename.name}")
     plt.close()
 
@@ -335,27 +340,30 @@ def plot_factor_exposure(df, beta_col, pval_col, title, filename, note=""):
     plot_df["sig"]      = plot_df[pval_col] < SIG_LEVEL
     plot_df = plot_df.sort_values("exposure", ascending=False).reset_index(drop=True)
     colors  = [DARK_BLUE if s else LIGHT_BLUE for s in plot_df["sig"]]
-    fig, ax = plt.subplots(figsize=(15, max(8, len(plot_df) * 0.28)))
+    # Square canvas, side scaled to the factor count (see plot_exposure for
+    # the sizing rationale)
+    side = max(9, len(plot_df) * 0.26)
+    fig, ax = plt.subplots(figsize=(side, side))
     ax.barh(range(len(plot_df)), plot_df["exposure"],
-            color=colors, edgecolor="white", linewidth=0.3, height=0.72)
+            color=colors, edgecolor="white", linewidth=0.3, height=0.74)
     ax.set_yticks([])
     ax.invert_yaxis()
     x_min, x_max = plot_df["exposure"].min(), plot_df["exposure"].max()
     pad = (x_max - x_min) * 0.015
     for i, (val, name) in enumerate(zip(plot_df["exposure"], plot_df["Factor"])):
-        if val >= 0: ax.text(val + pad, i, name, va="center", ha="left",  fontsize=7.5, color="black")
-        else:        ax.text(val - pad, i, name, va="center", ha="right", fontsize=7.5, color="black")
-    ax.set_xlim(x_min - (x_max - x_min) * 0.30, x_max + (x_max - x_min) * 0.30)
+        if val >= 0: ax.text(val + pad, i, name, va="center", ha="left",  fontsize=8, color="black")
+        else:        ax.text(val - pad, i, name, va="center", ha="right", fontsize=8, color="black")
+    ax.set_xlim(x_min - (x_max - x_min) * 0.32, x_max + (x_max - x_min) * 0.32)
     ax.axvline(0, color="black", linewidth=0.8, linestyle="--")
-    ax.set_xlabel("GEP Exposure (standardised β ×10 000 bps)", fontsize=10)
-    ax.set_title(title, fontsize=12, pad=12)
+    ax.set_xlabel("GEP Exposure (standardised β ×10 000 bps)", fontsize=10.5)
+    ax.set_title(title, fontsize=13, pad=14)
     ax.legend(handles=[
         mpatches.Patch(color=DARK_BLUE,  label=f"Significant (p < {SIG_LEVEL})"),
         mpatches.Patch(color=LIGHT_BLUE, label=f"Not significant (p ≥ {SIG_LEVEL})"),
-    ], loc="lower right", fontsize=8)
-    if note: fig.text(0.5, 0.01, note, ha="center", fontsize=7.5, style="italic")
-    plt.tight_layout(rect=[0, 0.04, 1, 1])
-    plt.savefig(filename, dpi=200, bbox_inches="tight")
+    ], loc="lower right", fontsize=8.5)
+    if note: fig.text(0.5, 0.005, note, ha="center", fontsize=8, style="italic")
+    plt.tight_layout(rect=[0, 0.02, 1, 1])
+    plt.savefig(filename, dpi=300, bbox_inches="tight")
     print(f"Saved: {filename.name}")
     plt.close()
 

@@ -69,22 +69,36 @@ gep_m = monthly["GEP_monthly"]
 # Event dictionaries (Curated for C&I Academic Style)
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Refined list of major, structurally significant global shocks
+# Refined list of major, structurally significant global shocks +
+# geoeconomic-pressure-specific events (sanctions, export controls,
+# financial coercion, trade coercion — mirroring the GTM topic dictionaries)
 EVENTS = [
+    ("1996-08-05", "Iran-Libya Sanctions Act"),
     ("1997-07-02", "Asian Financial Crisis"),
     ("1998-08-17", "Russian Ruble Crisis"),
     ("2001-09-11", "9/11 Attacks"),
     ("2003-03-20", "Iraq War"),
     ("2006-10-09", "N. Korea Nuclear Test"),
     ("2008-09-15", "Lehman Brothers (GFC)"),
+    ("2010-07-01", "Iran Sanctions Act (CISADA)"),
     ("2011-08-05", "US Credit Downgrade"),
+    ("2012-03-17", "Iran Banks Cut From SWIFT (Initial)"),
     ("2014-03-18", "Crimea Annexation"),
     ("2016-06-23", "Brexit Referendum"),
+    ("2017-08-02", "CAATSA Sanctions Act"),
+    ("2018-03-23", "Section 232 Steel/Aluminum Tariffs"),
+    ("2018-05-08", "US Exits Iran Nuclear Deal"),
     ("2018-07-06", "US–China Trade War"),
-    ("2019-05-10", "Trade War Escalation"),
+    ("2018-11-05", "Iran Banks Cut From SWIFT (Blanket)"),
+    ("2019-05-10", "Trade War Escalation & Huawei Entity List Ban", "10-16/05/2019"),
     ("2020-03-11", "COVID-19 Pandemic"),
-    ("2022-02-24", "Russia Invades Ukraine"),
+    ("2020-08-17", "Huawei Chip Export Rule Tightened"),
+    ("2022-02-24", "Russia Invades Ukraine & Cut From SWIFT", "24-26/02/2022"),
+    ("2022-06-21", "Xinjiang Forced-Labor Import Ban (UFLPA)"),
+    ("2022-10-07", "US Chip Export Controls on China"),
+    ("2023-10-17", "AI Chip Export Rules Tightened"),
     ("2024-05-14", "US 100% Tariffs on Chinese EVs"),
+    ("2025-02-01", "Canada/Mexico Tariffs Announced"),
     ("2025-04-02", "Liberation Day Tariffs"),
 ]
 
@@ -182,10 +196,34 @@ def find_nearby_peak(date_str, window_days=15):
     idx = sub["gep_norm"].idxmax()
     return sub.loc[idx, "date"], sub.loc[idx, "gep_norm"]
 
-raw_peaks = [(find_nearby_peak(d)[0], find_nearby_peak(d)[1], lbl) for d, lbl in EVENTS]
+raw_peaks = []
+for event in EVENTS:
+    d, lbl = event[0], event[1]
+    date_str = event[2] if len(event) > 2 else pd.to_datetime(d).strftime("%d/%m/%Y")
+    peak_date, peak_score = find_nearby_peak(d)
+    label_text = f"{date_str}: {lbl}"
+    raw_peaks.append((peak_date, peak_score, label_text, pd.to_datetime(d)))
 
-# Shorter, cleaner figure size
-fig, ax = plt.subplots(figsize=(10, 12))
+# Collision avoidance: enforce a minimum vertical gap (in days of axis
+# space) between labels so dense clusters (e.g. 2018-2020, Feb 2022) fan
+# out instead of overlapping. Two-pass forward/backward sweep centers each
+# cluster around its own natural dates instead of cascading drift forward
+# across the whole timeline. Each label keeps a thin leader line back to
+# its true dot position.
+MIN_LABEL_GAP_DAYS = 245
+raw_peaks_sorted = sorted((p for p in raw_peaks if p[1] != 0.0), key=lambda p: p[3])
+placed = [mdates.date2num(p[3]) for p in raw_peaks_sorted]
+for i in range(1, len(placed)):
+    placed[i] = max(placed[i], placed[i - 1] + MIN_LABEL_GAP_DAYS)
+for i in range(len(placed) - 2, -1, -1):
+    placed[i] = min(placed[i], placed[i + 1] - MIN_LABEL_GAP_DAYS)
+label_placements = [
+    (peak_date, peak_score, label_text, mdates.num2date(p))
+    for (peak_date, peak_score, label_text, _), p in zip(raw_peaks_sorted, placed)
+]
+
+# Much larger figure so 27 events have room without crowding the data line
+fig, ax = plt.subplots(figsize=(16, 34))
 
 # Plot Daily GEP as subtle background dots
 ax.scatter(daily_obs["gep_norm"], daily_obs["date"],
@@ -200,35 +238,112 @@ ax.set_xscale("log")
 ax.set_xticks([50, 100, 200, 400, 800])
 ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{int(x)}"))
 ax.xaxis.set_minor_formatter(ticker.NullFormatter())
-ax.tick_params(axis="x", colors=COL_GEP, labelsize=10, direction="out")
+ax.tick_params(axis="x", colors=COL_GEP, labelsize=14, direction="out")
 
-# Y-Axis formatting (Inverted so recent dates are at the top)
-ax.set_ylim(pd.Timestamp("2026-06-01"), pd.Timestamp("1995-06-01"))
+# Y-Axis formatting (Inverted so recent dates are at the top).
+# Bottom limit extends a year past the last data point to give the
+# collision-avoided label stack (see below) room without touching the axis.
+ax.set_ylim(pd.Timestamp("2027-06-01"), pd.Timestamp("1995-06-01"))
 ax.yaxis.set_major_locator(mdates.YearLocator(2))
 ax.yaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-ax.tick_params(axis="y", labelsize=10, direction="out", colors="black")
+ax.tick_params(axis="y", labelsize=14, direction="out", colors="black")
 
 # Clean spines
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 ax.spines["left"].set_color("black")
 ax.spines["bottom"].set_color("black")
-ax.set_xlabel("GEP Index (Log Scale)", fontsize=11, labelpad=10)
+ax.set_xlabel("GEP Index (Log Scale)", fontsize=15, labelpad=12)
 
-# Annotate the Peaks using offset points
-for peak_date, peak_score, label in raw_peaks:
-    if peak_score == 0.0: continue
-    # Solid dot marker
-    ax.scatter(peak_score, peak_date, s=25, color=COL_GEP, zorder=5, linewidths=0)
-    # Clean text to the right of the dot
+# Annotate the peaks. Text sits at its collision-avoided placement date
+# (data y) offset slightly right of the dot (offset-points x); a thin
+# leader line connects text back to the dot's true date/value when the
+# two diverge.
+for peak_date, peak_score, label_text, label_date in label_placements:
+    # Solid dot marker at the true event/peak position
+    ax.scatter(peak_score, peak_date, s=36, color=COL_GEP, zorder=5, linewidths=0)
     ax.annotate(
-        label, xy=(peak_score, peak_date), xytext=(12, 0),
-        textcoords="offset points", fontsize=9.5, ha="left", va="center", color="black"
+        label_text, xy=(peak_score, peak_date), xycoords="data",
+        xytext=(20, mdates.date2num(label_date)), textcoords=("offset points", "data"),
+        fontsize=18, ha="left", va="center", color="black", zorder=6,
+        bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.75),
+        arrowprops=dict(arrowstyle="-", color="#999999", lw=0.7, alpha=0.7,
+                         shrinkA=2, shrinkB=2)
     )
 
 plt.tight_layout()
 plt.savefig(OUT / "GEP_Daily_Robust_min2_norm100.png", dpi=300, bbox_inches="tight")
 print("Saved: GEP_Daily_Robust_min2_norm100.png")
+plt.close()
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# PLOT 2b — Same daily dot plot, zoomed to 2017 onward (smaller figure, since
+# fewer events need to share the space)
+# ═════════════════════════════════════════════════════════════════════════════
+EVENTS_2017 = [e for e in EVENTS if pd.to_datetime(e[0]) >= pd.Timestamp("2017-01-01")]
+
+raw_peaks_zoom = []
+for event in EVENTS_2017:
+    d, lbl = event[0], event[1]
+    date_str = event[2] if len(event) > 2 else pd.to_datetime(d).strftime("%d/%m/%Y")
+    peak_date, peak_score = find_nearby_peak(d)
+    label_text = f"{date_str}: {lbl}"
+    raw_peaks_zoom.append((peak_date, peak_score, label_text, pd.to_datetime(d)))
+
+MIN_LABEL_GAP_DAYS_ZOOM = 150
+raw_peaks_zoom_sorted = sorted((p for p in raw_peaks_zoom if p[1] != 0.0), key=lambda p: p[3])
+placed_zoom = [mdates.date2num(p[3]) for p in raw_peaks_zoom_sorted]
+for i in range(1, len(placed_zoom)):
+    placed_zoom[i] = max(placed_zoom[i], placed_zoom[i - 1] + MIN_LABEL_GAP_DAYS_ZOOM)
+for i in range(len(placed_zoom) - 2, -1, -1):
+    placed_zoom[i] = min(placed_zoom[i], placed_zoom[i + 1] - MIN_LABEL_GAP_DAYS_ZOOM)
+label_placements_zoom = [
+    (peak_date, peak_score, label_text, mdates.num2date(p))
+    for (peak_date, peak_score, label_text, _), p in zip(raw_peaks_zoom_sorted, placed_zoom)
+]
+
+daily_obs_zoom = daily_obs[(daily_obs["date"] >= "2017-01-01") & (daily_obs["date"] <= "2025-12-31")]
+monthly_zoom = monthly[(monthly["month"] >= "2017-01-01") & (monthly["month"] <= "2025-12-31")]
+
+fig, ax = plt.subplots(figsize=(11, 20))
+
+ax.scatter(daily_obs_zoom["gep_norm"], daily_obs_zoom["date"],
+           s=12, color="#d3d9e8", alpha=0.6, linewidths=0, zorder=2, label="Daily GEP")
+ax.plot(monthly_zoom["gep_norm_mo"], monthly_zoom["month"],
+        color=COL_GEP, linewidth=1.5, alpha=0.9, zorder=3, label="Monthly GEP")
+
+ax.set_xscale("log")
+ax.set_xticks([50, 100, 200, 400, 800])
+ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{int(x)}"))
+ax.xaxis.set_minor_formatter(ticker.NullFormatter())
+ax.tick_params(axis="x", colors=COL_GEP, labelsize=12, direction="out")
+
+ax.set_ylim(pd.Timestamp("2025-12-31"), pd.Timestamp("2016-09-01"))
+ax.yaxis.set_major_locator(mdates.YearLocator(1))
+ax.yaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+ax.tick_params(axis="y", labelsize=12, direction="out", colors="black")
+
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.spines["left"].set_color("black")
+ax.spines["bottom"].set_color("black")
+ax.set_xlabel("GEP Index (Log Scale)", fontsize=13, labelpad=10)
+
+for peak_date, peak_score, label_text, label_date in label_placements_zoom:
+    ax.scatter(peak_score, peak_date, s=30, color=COL_GEP, zorder=5, linewidths=0)
+    ax.annotate(
+        label_text, xy=(peak_score, peak_date), xycoords="data",
+        xytext=(16, mdates.date2num(label_date)), textcoords=("offset points", "data"),
+        fontsize=15, ha="left", va="center", color="black", zorder=6,
+        bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.75),
+        arrowprops=dict(arrowstyle="-", color="#999999", lw=0.6, alpha=0.7,
+                         shrinkA=2, shrinkB=2)
+    )
+
+plt.tight_layout()
+plt.savefig(OUT / "GEP_Daily_Robust_min2_norm100_2017plus.png", dpi=300, bbox_inches="tight")
+print("Saved: GEP_Daily_Robust_min2_norm100_2017plus.png")
 plt.close()
 
 
