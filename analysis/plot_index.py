@@ -108,8 +108,10 @@ TARIFF_2025 = [
     ("2025-04-02", "Liberation Day\ntariffs"),
     ("2025-05-12", "US–China\nGeneva truce"),
     ("2025-06-05", "US/Israel strike Iran\n(oil spike)"),
+    ("2025-07-14", "Trump: new weapons for\nUkraine, deadline for Russia"),
     ("2025-08-07", "10–41% broad US\ntariffs take effect"),
-    ("2025-10-10", "US–China tariff\nescalation"),
+    ("2025-10-24", "US–China tariff\nescalation"),
+    ("2025-12-25", "US airstrikes on\nIS militants in Nigeria"),
 ]
 
 KEY_EVENTS = {
