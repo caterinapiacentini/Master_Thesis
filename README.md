@@ -19,8 +19,7 @@ code/       cluster pipeline: cleaning -> Word2Vec -> GTM -> index construction
 slurm/      SLURM job scripts that run code/ on the WU cluster
 data/       final index CSVs (raw corpus and trained models live on the
             cluster, not in this repo — see "Data" below)
-analysis/   local scripts (Mac) that turn the CSVs into plots and regressions
-Archive/    superseded scripts, kept for reference
+analysis/   local scripts that turn the CSVs into plots and regressions
 ```
 
 ## Pipeline
