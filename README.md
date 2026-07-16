@@ -9,7 +9,7 @@ tracks the monthly/daily share of news coverage about geoeconomic stress —
 trade coercion, sanctions, export controls, financial coercion, embargoes,
 retaliation.
 
-The method extends Dangl & Salbrechter (2023): Word2Vec embeddings + Guided
+The method extends Dangl & Salbrechter (2023) and Caladara & Iacoviello (2022): Word2Vec embeddings + Guided
 Topic Modeling (GTM) + a threshold-based article classification.
 
 ## Repository layout
