@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# Guided Topic Modeling: expands a topic from seed words by walking outward
+# through the Word2Vec embedding space (--model_path, from train_w2v.py).
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -99,17 +102,14 @@ class GTM():
             v_hat = X @ b
             topics_dict[w] = np.linalg.norm(v_hat)
             
-        # UPGRADED RESOLUTION: 1920x1080 canvas
         wordcloud = WordCloud(width=1920, height=1080, max_words=800, relative_scaling=1, normalize_plurals=False, background_color="rgba(255, 255, 255, 1)", mode="RGBA")
         wordcloud = wordcloud.generate_from_frequencies(topics_dict)
         sorted_topics_dict = dict(sorted(topics_dict.items(), key=lambda item: item[1], reverse=True))
 
-        # UPGRADED FIGURE SIZE: 16:9 ratio
         fig = plt.figure(figsize=(16, 9))
         plt.imshow(wordcloud, interpolation="bilinear")
         plt.axis("off")
-        
-        # UPGRADED DPI: 300 (Print quality)
+
         wc_path = os.path.join(output_dir, "WordClouds", f"{self.filename}.png")
         plt.savefig(wc_path, dpi=300, facecolor='w', edgecolor='w', orientation='portrait', bbox_inches='tight')
         plt.close(fig)  
@@ -271,9 +271,7 @@ if __name__ == '__main__':
     # Create output directories (script is fully path-agnostic; all dirs come from SLURM)
     os.makedirs(os.path.join(args.output_dir, "WordClouds"), exist_ok=True)
 
-    # ---------------------------------------------------------
-    # GRID COMBINATION MODE
-    # ---------------------------------------------------------
+    # Grid combination mode
     if args.combine_grid:
         print("[INFO] Combining WordClouds into a 2x4 grid...")
         image_files = [
@@ -303,9 +301,7 @@ if __name__ == '__main__':
         print(f"[OK] Grid successfully saved to {grid_path}")
         sys.exit(0)
 
-    # ---------------------------------------------------------
-    # NORMAL GTM PROCESSING MODE
-    # ---------------------------------------------------------
+    # Normal GTM processing mode
     if not args.model_path or not args.pos_words or not args.pos_weights or not args.size or not args.gravity:
         print("Error: Missing required arguments for GTM run.")
         sys.exit(1)

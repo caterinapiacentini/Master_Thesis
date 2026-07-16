@@ -1,29 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-plot_industries.py
-
-GEP regressions on FF49 industry portfolios and JKP factors.
-
-DATA layout (relative to this script):
-  data/gep/GEP_Monthly_Robust_min2.csv
-  data/gep/GEP_Daily_Robust_min2.csv
-  data/external/data_gpr_daily_recent.xls
-  data/external/data_gpr_export.xls
-  data/external/[usa]_[all_factors]_[daily]_[vw_cap].csv   (JKP daily factors)
-  data/external/[usa]_[all_factors]_[monthly]_[vw_cap].csv (JKP monthly factors)
-
-External downloads via pandas_datareader: FF49 industry portfolios, FF3 factors.
-
-Outputs saved to output/industries/
-  GEP_Industry_Contemp_Daily.png           (FF49 + GPR, levels, contemporaneous)
-  GEP_Industry_Predic_Daily.png            (FF49 + GPR, levels, predictive)
-  GEP_Industry_Contemp_Daily_DELTA.png     (FF49 + ΔGPR, first-diff, contemporaneous)
-  GEP_Industry_Predic_Daily_DELTA.png      (FF49 + ΔGPR, first-diff, predictive)
-  GEP_Factor_Contemp_Daily.png             (JKP, levels, contemporaneous)
-  GEP_Factor_Predic_Daily.png              (JKP, levels, predictive)
-  GEP_Factor_Contemp_Daily_DELTA.png       (JKP, first-diff, contemporaneous)
-  GEP_Factor_Predic_Daily_DELTA.png        (JKP, first-diff, predictive)
+GEP exposure regressions on FF49 industry portfolios and JKP factors,
+levels and first differences, contemporaneous and predictive.
+Writes bar-chart plots to output/industries/.
 """
 
 import warnings
@@ -202,9 +182,7 @@ def plot_exposure(df, beta_col, pval_col, title, filename, subtitle_note=""):
     plt.close()
 
 
-# ═════════════════════════════════════════════════════════════════════════════
 # FF49 with GPR (levels + delta)
-# ═════════════════════════════════════════════════════════════════════════════
 print("\nRunning FF49 regressions — levels (with GPR)...")
 res_d_lev = run_ind_regressions(ind_d, ff3_d, daily_gep[["GEP_daily"]],  gpr_daily[["GPR_daily"]])
 res_d_dlt = run_ind_regressions(ind_d, ff3_d, dgep_daily[["GEP_daily"]], dgpr_daily[["GPR_daily"]])
@@ -229,9 +207,7 @@ for res, beta_c, pval_c, title, fname, note in [
 ]:
     plot_exposure(res, beta_c, pval_c, title, fname, note)
 
-# ═════════════════════════════════════════════════════════════════════════════
 # FF49 MONTHLY — console output only (ALL results)
-# ═════════════════════════════════════════════════════════════════════════════
 print("\nRunning FF49 regressions — monthly levels (with GPR)...")
 res_m_lev = run_ind_regressions(ind_m, ff3_m, monthly_gep[["GEP_monthly"]], gpr_monthly[["GPR_monthly"]])
 
@@ -268,9 +244,7 @@ for res, label_contemp, label_predic in [
               f"{row['Predic_Beta']:>+10.6f}  "
               f"p={row['Predic_Pval']:>6.3f}  {s}")
 
-# ═════════════════════════════════════════════════════════════════════════════
 # JKP Factors
-# ═════════════════════════════════════════════════════════════════════════════
 FACTOR_RENAME = {
     "market_equity": "Size (SMB)",     "be_me": "Book-to-Market (HML)",
     "ope_be": "Operating Profitability (RMW)", "at_gr1": "Asset Growth (CMA)",

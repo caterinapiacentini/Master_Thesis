@@ -1,22 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-new_index_definition.py
-
-Builds a GEP index defined as the SHARE of articles that mention at least
---min_topics distinct topic categories, computed at daily and monthly frequency.
-
-Index definition (default --min_topics 1, baseline):
-    GEP_d  = (# articles on day d with ≥1 dictionary hit) / (total articles on day d)
-    GEP_m  = (# articles in month m with ≥1 dictionary hit) / (total articles in month m)
-
-Robustness variant (--min_topics 2):
-    An article is a hit only if it contains words from ≥2 distinct GTM topic
-    categories — a stricter criterion that reduces false positives, analogous to
-    the Baker-Bloom-Davis EPU multi-category requirement.
-
-Dictionary: per-topic word sets loaded from all topic_*.csv in the GTM results
-directory; union used for counting, per-topic membership used for min_topics check.
+Builds the GEP index: daily and monthly share of articles that hit words
+from at least --min_topics distinct GTM topic dictionaries.
 """
 
 import os
@@ -30,16 +16,8 @@ import pandas as pd
 from tqdm import tqdm
 
 
-# ---------------------------------------------------------------------------
-# 1.  Build per-topic word sets from GTM topic CSVs
-# ---------------------------------------------------------------------------
-
+# Load per-topic word sets from the GTM topic CSVs
 def build_topic_word_sets(gtm_results_dir: str) -> dict:
-    """
-    Load every topic_*.csv from gtm_results_dir.
-    Returns:
-        topic_sets : dict  {topic_name -> frozenset of words}
-    """
     csv_files = sorted(
         glob.glob(os.path.join(gtm_results_dir, "topic_*.csv"))
     )
@@ -64,9 +42,7 @@ def build_topic_word_sets(gtm_results_dir: str) -> dict:
     return topic_sets
 
 
-# ---------------------------------------------------------------------------
-# 2.  Process corpus
-# ---------------------------------------------------------------------------
+# Process corpus
 
 def process_corpus(
     topic_sets: dict,
@@ -74,17 +50,9 @@ def process_corpus(
     meta_dir: str,
     min_topics: int = 1,
 ) -> pd.DataFrame:
-    """
-    Iterate over all yearly text/meta file pairs.  For every article record:
-        - date   : publication date (versionCreated, fallback firstCreated)
-        - hit    : 1 if the article matches ≥ min_topics distinct topic categories
-
-    min_topics=1  → baseline (≥1 word from any topic, consistent with C&I 2022)
-    min_topics=2  → robustness (words from ≥2 distinct topics required)
-
-    Returns a DataFrame with columns [date, hit].
-    """
-    # Pre-build union set for fast first-pass filtering
+    """For every article: date (versionCreated, fallback firstCreated) and
+    hit (1 if it matches >= min_topics distinct topic categories)."""
+    # union set for the fast path when min_topics == 1
     union_set = set()
     for words in topic_sets.values():
         union_set.update(words)
@@ -164,16 +132,9 @@ def process_corpus(
     return pd.DataFrame(records)
 
 
-# ---------------------------------------------------------------------------
-# 3.  Aggregate to daily and monthly indices
-# ---------------------------------------------------------------------------
-
+# Aggregate to daily and monthly indices
 def build_daily_index(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Daily GEP = hits / total_articles.
-    Also stores raw counts for transparency.
-    Cross-year duplicate dates are re-aggregated correctly.
-    """
+    """Daily GEP = hits / total articles that day."""
     df["date"] = pd.to_datetime(df["date"])
 
     agg = df.groupby("date").agg(
@@ -198,11 +159,8 @@ def build_daily_index(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_monthly_index(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Monthly GEP = total hits in month / total articles in month.
-    Computed directly from the article-level data, not from daily averages,
-    so each article counts once regardless of which day it falls on.
-    """
+    """Monthly GEP = hits / total articles that month (from article-level
+    data directly, not averaged from the daily index)."""
     df["date"]  = pd.to_datetime(df["date"])
     df["month"] = df["date"].dt.to_period("M")
 
@@ -219,9 +177,7 @@ def build_monthly_index(df: pd.DataFrame) -> pd.DataFrame:
     return monthly
 
 
-# ---------------------------------------------------------------------------
-# 4.  Main
-# ---------------------------------------------------------------------------
+# Main
 
 def main():
     parser = argparse.ArgumentParser(
@@ -264,20 +220,12 @@ def main():
         daily_fname   = f"GEP_Daily_Robust_min{args.min_topics}.csv"
         monthly_fname = f"GEP_Monthly_Robust_min{args.min_topics}.csv"
 
-    print("=" * 60)
-    print(f"  Index definition: ≥{args.min_topics} distinct topic(s) per article")
-    print("=" * 60)
+    print(f"\nIndex definition: >= {args.min_topics} distinct topic(s) per article")
 
-    # Step 1: build per-topic word sets
-    print("\n" + "=" * 60)
-    print("  Step 1: Building word sets from GTM topic CSVs")
-    print("=" * 60)
+    print("\nStep 1: building word sets from GTM topic CSVs")
     topic_sets = build_topic_word_sets(args.gtm_dir)
 
-    # Step 2: process corpus
-    print("=" * 60)
-    print("  Step 2: Scanning corpus for dictionary hits")
-    print("=" * 60)
+    print("\nStep 2: scanning corpus for dictionary hits")
     df_all = process_corpus(topic_sets, args.text_dir, args.meta_dir,
                             min_topics=args.min_topics)
 
@@ -291,33 +239,23 @@ def main():
     print(f"[INFO] Total GEP hits : {total_hits:,}  "
           f"({100 * total_hits / total_arts:.2f}% overall share)")
 
-    # Step 3: daily index
-    print("\n" + "=" * 60)
-    print("  Step 3: Building daily index")
-    print("=" * 60)
+    print("\nStep 3: building daily index")
     daily = build_daily_index(df_all.copy())
 
     daily_path = os.path.join(args.output_dir, daily_fname)
     daily.to_csv(daily_path, index=False)
     print(f"[OK] {daily_fname}  → {daily_path}")
 
-    # Step 4: monthly index
-    print("\n" + "=" * 60)
-    print("  Step 4: Building monthly index")
-    print("=" * 60)
+    print("\nStep 4: building monthly index")
     monthly = build_monthly_index(df_all.copy())
 
     monthly_path = os.path.join(args.output_dir, monthly_fname)
     monthly.to_csv(monthly_path, index=False)
     print(f"[OK] {monthly_fname} → {monthly_path}")
 
-    # Summary
     n_topics = len(topic_sets)
-    n_words  = sum(len(v) for v in topic_sets.values())  # with overlaps
     union_sz = len(set().union(*topic_sets.values()))
-    print("\n" + "=" * 60)
-    print("  Summary")
-    print("=" * 60)
+    print("\nSummary")
     print(f"  Topics / union words  : {n_topics} topics / {union_sz:,} unique words")
     print(f"  Min topics threshold  : {args.min_topics}")
     print(f"  Date range            : {daily['date'].min().date()} → "
@@ -329,7 +267,6 @@ def main():
           f"{gep_days['GEP_daily'].mean():.4f} / {gep_days['GEP_daily'].std():.4f}")
     print(f"  Monthly GEP mean / std: "
           f"{monthly['GEP_monthly'].mean():.4f} / {monthly['GEP_monthly'].std():.4f}")
-    print("=" * 60)
 
 
 if __name__ == "__main__":

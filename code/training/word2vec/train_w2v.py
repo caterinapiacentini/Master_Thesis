@@ -1,6 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+Trains Word2Vec on the cleaned US corpus (original source: the external
+RTRS newswire archive, via clean_world.py + filter_region.py).
+
+Reads:
+  --data_dir  rtrs_*_us_nodiary_noboiler.txt.gz (not in this repo — path is
+              set in slurm/training/train_word2vec.slurm)
+
+Writes:
+  --out_model  gensim Word2Vec model
+  --out_pkl    {word: vector} dict, pickled — what gtm.py loads
+"""
+
 import argparse
 import gzip
 import pickle

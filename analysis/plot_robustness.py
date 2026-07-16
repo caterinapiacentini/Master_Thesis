@@ -1,27 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-plot_robustness.py
-
-Robustness checks for the GEP index:
-  1. Stacked 3-panel plot: min-1, min-3, min-4 in C&I style with annotations
-  2. Comparison overlay: all four variants normalized to 100
-  3. Rolling 24-month correlation with baseline (min-2)
-  4. GTM v2 index plots (alternative seed words)
-
-DATA layout (relative to this script):
-  data/gep/GEP_Monthly_Robust_min2.csv    (baseline)
-  data/gep/GEP_Daily_Robust_min2.csv      (baseline)
-  data/robustness/GEP_Monthly_min1.csv
-  data/robustness/GEP_Daily_min1.csv
-  data/robustness/GEP_Monthly_Robust_min3.csv
-  data/robustness/GEP_Daily_Robust_min3.csv
-  data/robustness/GEP_Monthly_Robust_min4.csv
-  data/robustness/GEP_Daily_Robust_min4.csv
-  data/robustness/GEP_Monthly_gtm_v2.csv  (GTM v2 — optional)
-  data/robustness/GEP_Daily_gtm_v2.csv    (GTM v2 — optional)
-
-Outputs saved to output/robustness/
+Robustness checks for the GEP index: min-1/3/4 hit-rate thresholds and the
+GTM v2 alternative seed set, plus FF49/JKP regressions re-run on each variant.
+Reads data/gep_us/ and data/robustness/, writes to output/robustness/.
 """
 
 import warnings
@@ -60,12 +42,12 @@ COL_GEP = "#2b4c8c"   # dark navy
 ANNOTATIONS = {
     "2001-09": ("9/11",                    (0,   15),  False),
     "2003-03": ("Iraq\nWar",               (30,  10),  True),
-    "2008-09": ("GFC",                     (0,  -55),  True),
+    "2008-09": ("GFC",                     (-45, -50), True),
     "2014-03": ("Crimea\nannexation",      (0,   45),  True),
     "2018-06": ("US–China\ntariffs",       (-35, 30),  True),
     "2019-05": ("Trade war\nescalation",   (35, -25),  True),
     "2020-03": ("COVID-19",                (0,  -40),  True),
-    "2022-02": ("Russia invades\nUkraine", (-25, 45),  True),
+    "2022-02": ("Russia invades\nUkraine", (-25, 25),  True),
     "2025-04": ("Liberation Day\ntariffs", (20,  15),  False),
 }
 
@@ -97,9 +79,7 @@ def load_monthly(path, col="GEP_monthly"):
     return df, s / s.mean() * 100   # return full df and normalised series
 
 
-# ═════════════════════════════════════════════════════════════════════════════
 # PLOT 1 — Stacked 3-panel: min-1, min-3, min-4  (C&I style)
-# ═════════════════════════════════════════════════════════════════════════════
 print("\n--- Stacked robustness panel (C&I style) ---")
 
 VARIANTS = [
@@ -113,8 +93,8 @@ missing = [str(p) for _, p, _ in VARIANTS if not p.exists()]
 if missing:
     print(f"[WARNING] Missing files for stacked panel:\n  " + "\n  ".join(missing))
 else:
-    fig, axes = plt.subplots(3, 1, figsize=(12, 14), sharex=True,
-                             gridspec_kw={"hspace": 0.12})
+    fig, axes = plt.subplots(3, 1, figsize=(12, 18), sharex=True,
+                             gridspec_kw={"hspace": 0.16})
 
     for ax, (label, path, short) in zip(axes, VARIANTS):
         df, s_norm = load_monthly(path)
@@ -132,6 +112,14 @@ else:
         ax.yaxis.set_minor_formatter(ticker.NullFormatter())
         ax.tick_params(axis="y", colors=COL_GEP, labelsize=10, direction="out")
         ax.set_ylabel("GEP Index\n(avg = 100)", fontsize=9, color=COL_GEP)
+
+        # Extra headroom above the series peak so offset-point annotations
+        # (e.g. Russia invades Ukraine) never spill past the top spine into
+        # the panel above — each subplot here is much shorter than the
+        # single-panel monthly plot, so the same point offsets need more
+        # room relative to the axis height.
+        ax.set_ylim(bottom=max(10, df["gep_norm_mo"].min() * 0.6),
+                    top=df["gep_norm_mo"].max() * 4.5)
 
         # Panel label top-left
         ax.text(0.01, 0.95, label, transform=ax.transAxes,
@@ -170,19 +158,18 @@ else:
 
     fig.suptitle(
         "GEP Monthly Index — Hit-Rate Threshold Variants (1996–2025)",
-        fontsize=13, y=1.002
+        fontsize=13, y=0.965
     )
 
     plt.tight_layout()
+    fig.subplots_adjust(top=0.93)
     out_path = OUT / "GEP_Robustness_Stacked_Panel.png"
     plt.savefig(out_path, dpi=300, bbox_inches="tight")
     print(f"Saved: {out_path.name}")
     plt.close()
 
 
-# ═════════════════════════════════════════════════════════════════════════════
 # PLOT 2 — Overlay: all four variants normalised to 100
-# ═════════════════════════════════════════════════════════════════════════════
 print("\n--- Robustness overlay (all variants) ---")
 
 ALL_VARIANTS = [
@@ -257,9 +244,7 @@ if series:
     plt.close()
 
 
-# ═════════════════════════════════════════════════════════════════════════════
 # PLOT 3 — GTM v2 (alternative seed words)
-# ═════════════════════════════════════════════════════════════════════════════
 v2_monthly = ROBUST / "GEP_Monthly_gtm_v2.csv"
 
 if v2_monthly.exists():
@@ -319,11 +304,9 @@ else:
     print(f"\n[INFO] GTM v2 file not found ({v2_monthly.name}). "
           f"Place it in data/robustness/ to generate this plot.")
 
-print("\n═══ All robustness plots saved to output/robustness/ ═══")
+print("\nAll robustness plots saved to output/robustness/")
 
-# ═════════════════════════════════════════════════════════════════════════════
 # REGRESSIONS — FF49 Industries & JKP Factors across robustness variants
-# ═════════════════════════════════════════════════════════════════════════════
 EXT              = REPO / "data" / "external"
 CACHE            = EXT / "cached"
 GPR_RECENT       = EXT / "data_gpr_daily_recent.xls"
@@ -596,4 +579,4 @@ for variant_name, daily_path, monthly_path in ROB_VARIANTS:
             f"JKP FACTORS DAILY — FIRST DIFF — PREDICTIVE [{variant_name}]",
         )
 
-print("\n═══ Robustness regressions complete ═══")
+print("\nRobustness regressions complete")

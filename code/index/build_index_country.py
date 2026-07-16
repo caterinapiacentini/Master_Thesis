@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-new_index_country.py
-
-Builds a country-specific GEP index.  An article is a hit only if:
-  1. It contains words from >= min_topics distinct GTM topic categories (default 2)
-  2. It mentions at least one of the country's name terms in the text
-
-Supported --country values: japan, us, uk, china, iran, russia, germany
+Builds a country-specific GEP index: an article is a hit only if it matches
+>= min_topics GTM topics AND mentions the country's name terms.
 """
 
 import os
@@ -21,11 +16,8 @@ import pandas as pd
 from tqdm import tqdm
 
 
-# ---------------------------------------------------------------------------
-# Country name terms (all lowercase — corpus is already lowercased)
-# Substring match on raw text, so multi-word terms like "united states" work.
-# ---------------------------------------------------------------------------
-
+# Country name terms, lowercase (corpus is already lowercased). Substring
+# match on raw text, so multi-word terms like "united states" work.
 COUNTRY_TERMS = {
     "japan":   {"japan", "japanese", "tokyo"},
     "us":      {"united states", "us", "american", "americans"},
@@ -37,10 +29,7 @@ COUNTRY_TERMS = {
 }
 
 
-# ---------------------------------------------------------------------------
-# 1.  Build per-topic word sets from GTM topic CSVs
-# ---------------------------------------------------------------------------
-
+# Load per-topic word sets from the GTM topic CSVs
 def build_topic_word_sets(gtm_results_dir: str) -> dict:
     csv_files = sorted(glob.glob(os.path.join(gtm_results_dir, "topic_*.csv")))
     if not csv_files:
@@ -62,10 +51,7 @@ def build_topic_word_sets(gtm_results_dir: str) -> dict:
     return topic_sets
 
 
-# ---------------------------------------------------------------------------
-# 2.  Process corpus
-# ---------------------------------------------------------------------------
-
+# Process corpus
 def process_corpus(
     topic_sets: dict,
     country_terms: set,
@@ -73,10 +59,8 @@ def process_corpus(
     meta_dir: str,
     min_topics: int = 2,
 ) -> pd.DataFrame:
-    """
-    For every article: hit=1 iff it contains >= min_topics distinct GTM topic
-    categories AND at least one country term appears in the article text.
-    """
+    """hit=1 iff the article matches >= min_topics GTM topics AND mentions
+    at least one country term."""
     union_set = set()
     for words in topic_sets.values():
         union_set.update(words)
@@ -156,10 +140,7 @@ def process_corpus(
     return pd.DataFrame(records)
 
 
-# ---------------------------------------------------------------------------
-# 3.  Aggregate to daily and monthly indices
-# ---------------------------------------------------------------------------
-
+# Aggregate to daily and monthly indices
 def build_daily_index(df: pd.DataFrame) -> pd.DataFrame:
     df["date"] = pd.to_datetime(df["date"])
 
@@ -197,10 +178,7 @@ def build_monthly_index(df: pd.DataFrame) -> pd.DataFrame:
     return monthly
 
 
-# ---------------------------------------------------------------------------
-# 4.  Main
-# ---------------------------------------------------------------------------
-
+# Main
 def main():
     parser = argparse.ArgumentParser(
         description=(
@@ -231,20 +209,14 @@ def main():
     daily_fname   = f"GEP_Daily_{country_label}_min{args.min_topics}.csv"
     monthly_fname = f"GEP_Monthly_{country_label}_min{args.min_topics}.csv"
 
-    print("=" * 60)
-    print(f"  Country filter        : {country_label}")
-    print(f"  Country terms         : {sorted(country_terms)}")
-    print(f"  Min topics threshold  : {args.min_topics}")
-    print("=" * 60)
+    print(f"\nCountry filter        : {country_label}")
+    print(f"Country terms         : {sorted(country_terms)}")
+    print(f"Min topics threshold  : {args.min_topics}")
 
-    print("\n" + "=" * 60)
-    print("  Step 1: Building word sets from GTM topic CSVs")
-    print("=" * 60)
+    print("\nStep 1: building word sets from GTM topic CSVs")
     topic_sets = build_topic_word_sets(args.gtm_dir)
 
-    print("=" * 60)
-    print("  Step 2: Scanning corpus for dictionary + country hits")
-    print("=" * 60)
+    print("\nStep 2: scanning corpus for dictionary + country hits")
     df_all = process_corpus(
         topic_sets, country_terms,
         args.text_dir, args.meta_dir,
@@ -261,17 +233,13 @@ def main():
     print(f"[INFO] Total GEP hits : {total_hits:,}  "
           f"({100 * total_hits / total_arts:.2f}% overall share)")
 
-    print("\n" + "=" * 60)
-    print("  Step 3: Building daily index")
-    print("=" * 60)
+    print("\nStep 3: building daily index")
     daily = build_daily_index(df_all.copy())
     daily_path = os.path.join(args.output_dir, daily_fname)
     daily.to_csv(daily_path, index=False)
     print(f"[OK] {daily_fname}  → {daily_path}")
 
-    print("\n" + "=" * 60)
-    print("  Step 4: Building monthly index")
-    print("=" * 60)
+    print("\nStep 4: building monthly index")
     monthly = build_monthly_index(df_all.copy())
     monthly_path = os.path.join(args.output_dir, monthly_fname)
     monthly.to_csv(monthly_path, index=False)
@@ -279,9 +247,7 @@ def main():
 
     n_topics = len(topic_sets)
     union_sz = len(set().union(*topic_sets.values()))
-    print("\n" + "=" * 60)
-    print("  Summary")
-    print("=" * 60)
+    print("\nSummary")
     print(f"  Country               : {country_label}")
     print(f"  Topics / union words  : {n_topics} topics / {union_sz:,} unique words")
     print(f"  Min topics threshold  : {args.min_topics}")
@@ -294,7 +260,6 @@ def main():
           f"{gep_days['GEP_daily'].mean():.4f} / {gep_days['GEP_daily'].std():.4f}")
     print(f"  Monthly GEP mean / std: "
           f"{monthly['GEP_monthly'].mean():.4f} / {monthly['GEP_monthly'].std():.4f}")
-    print("=" * 60)
 
 
 if __name__ == "__main__":

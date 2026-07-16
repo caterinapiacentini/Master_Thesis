@@ -1,23 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-plot_index.py
-
-GEP Robust min-2 index — main plots + descriptive statistics.
-
-DATA layout (relative to this script):
-  data/gep/GEP_Monthly_Robust_min2.csv
-  data/gep/GEP_Daily_Robust_min2.csv
-
-Outputs saved to output/index/
-  GEP_Monthly_Robust_min2_norm100.png
-  GEP_Daily_Robust_min2_norm100.png
-  GEP_Daily_2025_Zoom_norm100.png
-  gep_summary_rolling_vol.png
-  gep_summary_distribution.png
-  gep_summary_acf_pacf.png
-  gep_summary_annual.png
-  gep_summary_heatmap.png
+Main GEP index plots (monthly, daily, 2025 zoom) and descriptive statistics.
+Reads data/gep_us/GEP_*_Robust_min2.csv, writes to output/index/.
 """
 
 import warnings
@@ -103,15 +88,15 @@ EVENTS = [
 ]
 
 TARIFF_2025 = [
-    ("2025-01-20", "Trump\ninauguration"),
-    ("2025-02-01", "25% tariffs on\nCanada & Mexico"),
-    ("2025-04-02", "Liberation Day\ntariffs"),
-    ("2025-05-12", "US–China\nGeneva truce"),
-    ("2025-06-05", "US/Israel strike Iran\n(oil spike)"),
-    ("2025-07-14", "Trump: new weapons for\nUkraine, deadline for Russia"),
-    ("2025-08-07", "10–41% broad US\ntariffs take effect"),
-    ("2025-10-24", "US–China tariff\nescalation"),
-    ("2025-12-25", "US airstrikes on\nIS militants in Nigeria"),
+    ("2025-01-20", "Trump\ninauguration",                                     "top"),
+    ("2025-02-01", "25% tariffs on\nCanada & Mexico",                         "bottom"),
+    ("2025-04-02", "Liberation Day\ntariffs",                                 "top"),
+    ("2025-05-12", "US–China\nGeneva truce",                                  "bottom"),
+    ("2025-06-05", "US/Israel strike Iran\n(oil spike)",                      "bottom"),
+    ("2025-07-14", "Trump: new weapons for\nUkraine, deadline for Russia",    "bottom"),
+    ("2025-08-07", "10–41% broad US\ntariffs take effect",                    "bottom"),
+    ("2025-10-24", "US–China tariff\nescalation",                             "top"),
+    ("2025-12-25", "US airstrikes on\nIS militants in Nigeria",               "bottom"),
 ]
 
 KEY_EVENTS = {
@@ -129,14 +114,12 @@ COL_GEP = "#2b4c8c"
 COL_V30, COL_V90 = "#E05C2A", "#5A4FCF"
 
 
-# ═════════════════════════════════════════════════════════════════════════════
 # PLOT 1 — Monthly index (line plot) normalized to 100
-# ═════════════════════════════════════════════════════════════════════════════
 
 ANNOTATIONS = {
     "2001-09": ("9/11",                    (0, 15),   False),
     "2003-03": ("Iraq\nWar",               (30, 10),  True),
-    "2008-09": ("GFC",                     (0, -55),  True),
+    "2008-09": ("GFC",                     (-45, -50), True),
     "2014-03": ("Crimea\nannexation",      (0, 45),   True),
     "2018-06": ("US–China\ntariffs",       (-35, 30), True),
     "2019-05": ("Trade war\nescalation",   (35, -25), True),
@@ -187,9 +170,7 @@ print("Saved: GEP_Monthly_Robust_min2_norm100.png")
 plt.close()
 
 
-# ═════════════════════════════════════════════════════════════════════════════
 # PLOT 2 — Daily index (horizontal dot plot) C&I Style Refactor
-# ═════════════════════════════════════════════════════════════════════════════
 def find_nearby_peak(date_str, window_days=15):
     dt = pd.to_datetime(date_str)
     sub = daily_obs[(daily_obs["date"] >= dt - pd.Timedelta(days=window_days)) &
@@ -279,10 +260,7 @@ print("Saved: GEP_Daily_Robust_min2_norm100.png")
 plt.close()
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-# PLOT 2b — Same daily dot plot, zoomed to 2017 onward (smaller figure, since
-# fewer events need to share the space)
-# ═════════════════════════════════════════════════════════════════════════════
+# PLOT 2b — same daily dot plot, zoomed to 2017 onward
 EVENTS_2017 = [e for e in EVENTS if pd.to_datetime(e[0]) >= pd.Timestamp("2017-01-01")]
 
 raw_peaks_zoom = []
@@ -349,9 +327,7 @@ print("Saved: GEP_Daily_Robust_min2_norm100_2017plus.png")
 plt.close()
 
 
-# ═════════════════════════════════════════════════════════════════════════════
 # PLOT 3 — 2025 zoom (Caldara & Iacoviello style)
-# ═════════════════════════════════════════════════════════════════════════════
 daily_2025 = daily_obs[(daily_obs["date"] >= "2025-01-01") &
                        (daily_obs["date"] <= "2025-12-31")].copy()
 
@@ -377,13 +353,13 @@ ax.spines["right"].set_visible(False)
 ax.spines["left"].set_color("black") 
 
 y_top, y_bottom = 0.95, 0.05
-for i, (date_str, label) in enumerate(TARIFF_2025):
+for date_str, label, position in TARIFF_2025:
     dt = pd.to_datetime(date_str)
     if dt < pd.Timestamp("2025-01-01") or dt > pd.Timestamp("2025-12-31"): continue
-    
+
     ax.axvline(dt, color="black", linewidth=0.8, linestyle=":", alpha=0.5, zorder=1)
-    y_frac = y_top if i % 2 == 0 else y_bottom
-    va = "top" if i % 2 == 0 else "bottom"
+    y_frac = y_top if position == "top" else y_bottom
+    va = position
 
     ax.text(dt - pd.Timedelta(days=2), y_frac, label, transform=ax.get_xaxis_transform(),
             fontsize=10, ha="right", va=va, color="black", rotation=90)
@@ -393,12 +369,10 @@ plt.savefig(OUT / "GEP_Daily_2025_Zoom_norm100.png", dpi=300, bbox_inches="tight
 print("Saved: GEP_Daily_2025_Zoom_norm100.png")
 plt.close()
 
-# ═════════════════════════════════════════════════════════════════════════════
-# DESCRIPTIVE STATISTICS & OTHER PLOTS 
-# ═════════════════════════════════════════════════════════════════════════════
+# DESCRIPTIVE STATISTICS & OTHER PLOTS
 def summary_stats(s, label):
     adf_stat, adf_p, *_ = adfuller(s.dropna(), autolag="AIC")
-    print(f"\n{'═'*55}\n  {label}\n{'─'*55}")
+    print(f"\n{label}\n" + "-" * 40)
     print(f"  Observations   : {len(s):,}")
     print(f"  Mean           : {s.mean():.6f}")
     print(f"  Median         : {s.median():.6f}")
@@ -409,9 +383,7 @@ def summary_stats(s, label):
     print(f"  ADF stat       : {adf_stat:.4f}   p = {adf_p:.4f} "
           f"{'[stationary]' if adf_p < 0.05 else '[non-stationary]'}")
 
-print("\n╔══════════════════════════════════════════════╗")
-print("║     GEP Robust min-2 — Summary Statistics    ║")
-print("╚══════════════════════════════════════════════╝")
+print("\nGEP Robust min-2 — Summary Statistics")
 
 gep_d_idx = gep_d.copy(); gep_d_idx.index = daily_obs["date"]
 summary_stats(gep_d_idx, "Daily GEP (trading days with >0 articles)")
@@ -547,4 +519,4 @@ plt.savefig(OUT / "gep_summary_heatmap.png", dpi=150, bbox_inches="tight")
 print("Saved: gep_summary_heatmap.png")
 plt.close()
 
-print("\n═══ All plots saved to output/index/ ═══")
+print("\nAll plots saved to output/index/")

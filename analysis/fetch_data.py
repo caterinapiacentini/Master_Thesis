@@ -1,27 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-fetch_data.py
-
-Download and cache all external market data used by the analysis scripts.
-Run this once; subsequent runs of any analysis script will load from
-data/external/cached/ instead of hitting the network each time.
-
-Usage:
-  python fetch_data.py           # skip files that already exist
-  python fetch_data.py --force   # re-download everything
-
-Files saved to data/external/cached/:
-  vix_daily.csv            ^VIX daily Close
-  vix_monthly.csv          ^VIX monthly Close
-  sp500_daily.csv          ^GSPC daily Close + log_ret
-  sp500_monthly.csv        ^GSPC monthly Close + log_ret
-  ff3_daily.csv            Fama-French 3-factor daily (raw %, Mkt-RF SMB HML RF)
-  ff3_monthly.csv          Fama-French 3-factor monthly (raw %)
-  ff49_daily.csv           FF 49 Industry Portfolios daily (raw %)
-  ff49_monthly.csv         FF 49 Industry Portfolios monthly (raw %)
-  jkp_daily_factors.csv    JKP selected factors daily — filtered & pivoted
-  jkp_monthly_factors.csv  JKP selected factors monthly — filtered & pivoted
+Downloads and caches VIX, S&P 500, Fama-French, and JKP data to
+data/external/cached/ so the analysis scripts don't hit the network.
+Run once; use --force to re-download.
 """
 
 import argparse
@@ -185,4 +167,4 @@ if JKP_MONTHLY.exists():
 else:
     print(f"  [SKIP]  jkp_monthly_factors.csv — source file not found: {JKP_MONTHLY.name}")
 
-print(f"\n═══ Cache complete — files saved to {CACHE.relative_to(REPO)} ═══")
+print(f"\nDone — files saved to {CACHE.relative_to(REPO)}")

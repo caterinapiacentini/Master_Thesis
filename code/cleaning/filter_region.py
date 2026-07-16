@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Filter an already-cleaned world corpus to a regional subset.
+Filters an already-cleaned world corpus down to a region, by matching the
+country codes recorded in each article's metadata.
 
 Reads:
-  DATA_WORLD/rtrs_YYYY_world_nodiary_noboiler.txt.gz   (token lines)
+  DATA_WORLD/rtrs_YYYY_world_nodiary_noboiler.txt.gz   (token lines, from clean_world.py)
   INFO_DATA_WORLD/rtrs_YYYY_world_meta.jsonl.gz        (metadata, aligned by line)
 
 Writes:
   <out_dir>/rtrs_YYYY_<region_tag>_nodiary_noboiler.txt.gz
-
-The two input files are written in lockstep during cleaning, so line N in the
-tokens file always matches line N in the metadata file.
 """
 
 import argparse

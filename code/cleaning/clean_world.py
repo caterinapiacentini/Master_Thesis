@@ -1,6 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+Cleans and tokenises the raw Reuters (RTRS) newswire archive.
+
+Reads:
+  --year_dir  external RTRS archive, .../RTRS/<YEAR>/*.txt.gz (not in this
+              repo — path is set in slurm/cleaning/clean_world.slurm)
+
+Writes:
+  --out_tokens  one cleaned/tokenised article per line, .txt.gz
+  --out_meta    aligned metadata (one JSON object per line), .jsonl.gz
+"""
+
 import argparse
 import gzip
 import json
@@ -8,9 +20,7 @@ import re
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional, Set, Tuple
 
-# ----------------------------
 # Parsing RTRS gz format (robust)
-# ----------------------------
 def iter_rtrs_items_from_gz(gz_path: Path) -> Iterator[Dict]:
     """
     File structure:
@@ -47,9 +57,7 @@ def iter_rtrs_items_from_gz(gz_path: Path) -> Iterator[Dict]:
                 continue
 
 
-# ----------------------------
 # Filters & extraction
-# ----------------------------
 def is_english(item: Dict) -> bool:
     data = item.get("data")
     if not isinstance(data, dict):
@@ -145,9 +153,7 @@ def extract_meta(item: Dict, gz_path: Path) -> Dict:
     return meta
 
 
-# ----------------------------
 # Cleaning & tokenization
-# ----------------------------
 RE_HTML = re.compile(r"<[^>]+>") 
 RE_URL = re.compile(r"https?://\S+|www\.\S+", flags=re.IGNORECASE)
 RE_EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
@@ -193,9 +199,7 @@ def tokenize(text: str, remove_stopwords: bool, min_token_len: int) -> List[str]
     return toks
 
 
-# ----------------------------
 # Corpus iterators
-# ----------------------------
 def list_year_gz_files(year_dir: Path, pattern: str = "*.txt.gz") -> List[Path]:
     return sorted(year_dir.glob(pattern))
 
@@ -280,9 +284,7 @@ def iter_docs_for_phrase_learning(
             yield toks
 
 
-# ----------------------------
 # Main
-# ----------------------------
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--year_dir", required=True, type=str, help=".../RTRS/<YEAR>")

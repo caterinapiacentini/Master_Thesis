@@ -1,22 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-plot_comparisons.py
-
-GEP vs VIX, GPR, EPU, and S&P 500 — time-series comparisons + regressions.
-
-DATA layout (relative to this script):
-  data/gep/GEP_Monthly_Robust_min2.csv
-  data/gep/GEP_Daily_Robust_min2.csv
-  data/external/data_gpr_daily_recent.xls    (Caldara & Iacoviello GPR daily)
-  data/external/data_gpr_export.xls          (GPR monthly / fallback)
-  data/external/All_Daily_Policy_Data.csv    (Baker-Bloom-Davis EPU daily)
-  data/external/US_Policy_Uncertainty_Data.xlsx (Baker-Bloom-Davis EPU monthly)
-
-External downloads (via yfinance / pandas_datareader):
-  ^VIX, ^GSPC, Fama-French factors
-
-Outputs saved to output/comparisons/
+GEP compared against GPR (Caldara & Iacoviello), EPU (Baker-Bloom-Davis),
+VIX, and the S&P 500 — time series, correlations, and regressions.
+GPR/EPU files must be placed in data/external/; VIX, S&P 500 and
+Fama-French data are downloaded via fetch_data.py.
 """
 
 import warnings
@@ -122,9 +110,7 @@ COL_GEP, COL_GPR, COL_EPU = "#378ADD", "#E05C2A", "#2CA02C"
 COL_VIX, COL_ROLL = "#8E44AD", "#5A4FCF"
 
 
-# ═════════════════════════════════════════════════════════════════════════════
 # GEP vs GPR
-# ═════════════════════════════════════════════════════════════════════════════
 print("\n" + "="*60 + "\nGEP vs GPR\n" + "="*60)
 
 gpr_raw = pd.read_excel(GPR_XLS, parse_dates=["date"])
@@ -228,9 +214,7 @@ plt.savefig(OUT / "gep_vs_gprd_crosscorr.png", dpi=150, bbox_inches="tight")
 print("Saved: gep_vs_gprd_crosscorr.png"); plt.close()
 
 
-# ═════════════════════════════════════════════════════════════════════════════
 # GEP vs EPU
-# ═════════════════════════════════════════════════════════════════════════════
 print("\n" + "="*60 + "\nGEP vs EPU\n" + "="*60)
 
 epu_d_raw = pd.read_csv(EXT / "All_Daily_Policy_Data.csv")
@@ -330,9 +314,7 @@ plt.tight_layout()
 plt.savefig(OUT / "gep_vs_epud_crosscorr.png", dpi=150, bbox_inches="tight")
 print("Saved: gep_vs_epud_crosscorr.png"); plt.close()
 
-# ═════════════════════════════════════════════════════════════════════════════
 # FINAL COMPARISON GEP vs GPR & EPU
-# ═════════════════════════════════════════════════════════════════════════════
 
 # Calculate the normalization factor for GEP (same as your original monthly code)
 monthly_gep["GEP_norm_mo"] = (monthly_gep["GEP_monthly"] / monthly_gep["GEP_monthly"].mean()) * 100
@@ -420,9 +402,7 @@ plt.savefig(OUT / "Final_Comparison_GEP_GPR_EPU.png", dpi=300, bbox_inches="tigh
 print("Saved: Final_Comparison_GEP_GPR_EPU.png")
 plt.close()
 
-# ═════════════════════════════════════════════════════════════════════════════
 # GEP vs VIX
-# ═════════════════════════════════════════════════════════════════════════════
 print("\n" + "="*60 + "\nGEP vs VIX\n" + "="*60)
 
 vix_mo = pd.read_csv(CACHE / "vix_monthly.csv", parse_dates=["Date"])
@@ -506,9 +486,7 @@ for name, (s, e) in SUBS_D_VIX.items():
             ["GEP_Norm_lag1", "Mkt-RF_lag1", "SMB_lag1", "HML_lag1", "VIX_Norm_lag1", "GPR_lag1"],
             slice_df(reg_d, s, e), name, "GEP_Norm_lag1", hac_lags=10)
 
-# ═════════════════════════════════════════════════════════════════════════════
 # GEP vs S&P 500
-# ═════════════════════════════════════════════════════════════════════════════
 print("\n" + "="*60 + "\nGEP vs S&P 500\n" + "="*60)
 sp500_mo   = pd.read_csv(CACHE / "sp500_monthly.csv", index_col="Date", parse_dates=True).sort_index()
 sp500_d    = pd.read_csv(CACHE / "sp500_daily.csv",   index_col="Date", parse_dates=True).sort_index()
@@ -622,4 +600,4 @@ for name, (s, e) in SUBS_D.items():
     run_ols("log_ret", ["gep_pct_lag1", "Mkt-RF_lag1", "SMB_lag1", "HML_lag1", "GPR_lag1"],
             slice_df(df_d_sp, s, e), name, "gep_pct_lag1", hac_lags=10)
 
-print("\n═══ All comparison plots saved to output/comparisons/ ═══")
+print("\nAll comparison plots saved to output/comparisons/")

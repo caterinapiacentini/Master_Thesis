@@ -1,19 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-normalize_monthly_index.py
-
-Adds EPU-style normalization columns to GEP_Monthly_Index.csv files.
-Each series is normalized independently:
-  GEP_norm = (GEP_monthly / mean(GEP_monthly)) * 100
-so that the long-run average equals 100 for both indices.
-
-Does NOT recompute the index — reads the existing CSV and appends columns.
-
-Usage:
-    python normalize_monthly_index.py \
-        --us_path  output/INDEX_8/GEP_Monthly_Index.csv \
-        --eu_path  output/INDEX_8_europe/GEP_Monthly_Index.csv
+Adds an EPU-style GEP_norm column (long-run mean = 100) to an existing
+GEP_Monthly_Index.csv, for the US and EU indices. Does not recompute the index.
 """
 
 import os
